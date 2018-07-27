@@ -51,6 +51,8 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
         public static readonly Guid LAVFilterSource = new Guid("B98D13E7-55DB-4385-A33D-09FD1BA26338");
         public static readonly Guid LAVFilter = new Guid("171252A0-8820-4AFE-9DF8-5C92B2D66B04");
+        public static readonly Guid LAVFilterVideo = new Guid("EE30215D-164F-4A92-A4EB-9D4C13390F9F");
+        public static readonly Guid LAVFilterAudio = new Guid("E8E73B6B-4CB3-44A4-BE99-4F7BCB96E491");
 
         public static readonly Guid FFDShowVideo = new Guid("04FE9017-F873-410e-871E-AB91661A4EF7");
         public static readonly Guid FFDShowVideoRaw = new Guid("0B390488-D80F-4a68-8408-48DC199F0E97");

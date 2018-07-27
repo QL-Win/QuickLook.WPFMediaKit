@@ -63,10 +63,12 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
         public MediaUriPlayer()
         {
-            Splitter = "LAV Splitter";
-            SplitterSource = "LAV Splitter Source";
-            VideoDecoder = "LAV Video Decoder";
-            AudioDecoder = "LAV Audio Decoder";
+            LAVFilterDirectory = "./";
+
+            Splitter = new FilterName("LAV Splitter", ClassId.LAVFilter, "LAVSplitter.ax");
+            SplitterSource = new FilterName("LAV Splitter Source", ClassId.LAVFilterSource, "LAVSplitter.ax");
+            VideoDecoder = new FilterName("LAV Video Decoder", ClassId.LAVFilterVideo, "LAVVideo.ax");
+            AudioDecoder = new FilterName("LAV Audio Decoder", ClassId.LAVFilterAudio, "LAVAudio.ax");
         }
 
 
@@ -252,10 +254,11 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             file2.Close();
         }
 
-        public string Splitter { get; set; }
-        public string SplitterSource { get; set; }
-        public string VideoDecoder { get; set; }
-        public string AudioDecoder { get; set; }
+        public string LAVFilterDirectory { get; set; }
+        public FilterName Splitter { get; set; }
+        public FilterName SplitterSource { get; set; }
+        public FilterName VideoDecoder { get; set; }
+        public FilterName AudioDecoder { get; set; }
 
 
         /// <summary>
@@ -301,7 +304,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                  hr = m_graph.AddFilter(sourceFilter, SplitterSource);
                  DsError.ThrowExceptionForHR(hr);*/
 
-                sourceFilter = DirectShowUtil.AddFilterToGraph(m_graph, SplitterSource, Guid.Empty);
+                sourceFilter = DirectShowUtil.AddFilterToGraph(m_graph, SplitterSource,LAVFilterDirectory, Guid.Empty);
                 if (sourceFilter == null)
                     throw new WPFMediaKitException("Could not add SplitterSource to graph.");
 
@@ -342,7 +345,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                     HasVideo = false;
                 }
 
-                DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder, Guid.Empty);
+                DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder,LAVFilterDirectory, Guid.Empty);
 
                 try
                 {
@@ -584,9 +587,9 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             AddFilterByName(m_graph, DirectShowLib.FilterCategory.AudioRendererCategory, audioRenderer);
         }
 
-        protected virtual void InsertAudioFilter(IBaseFilter sourceFilter, string audioDecoder)
+        protected virtual void InsertAudioFilter(IBaseFilter sourceFilter, FilterName audioDecoder)
         {
-            if (string.IsNullOrEmpty(audioDecoder))
+            if (audioDecoder.CLSID == Guid.Empty)
                 return;
 
             // Set Audio Codec
@@ -615,7 +618,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 audioPinFrom = null;
             }
 
-            DirectShowUtil.AddFilterToGraph(m_graph, audioDecoder, Guid.Empty);
+            DirectShowUtil.AddFilterToGraph(m_graph, audioDecoder,LAVFilterDirectory, Guid.Empty);
         }
 
         /// <summary>

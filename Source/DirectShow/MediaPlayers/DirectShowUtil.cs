@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.IO;
 using System.Runtime.InteropServices;
 using DirectShowLib;
 
@@ -11,42 +12,57 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DirectShowUtil));
 
-        public static IBaseFilter AddFilterToGraph(IGraphBuilder graphBuilder, string strFilterName, Guid clsid)
+        public static IBaseFilter AddFilterToGraph(IGraphBuilder graphBuilder, FilterName filterName, string baseDir, Guid clsid)
         {
-            if (string.IsNullOrEmpty(strFilterName))
+            if (String.IsNullOrEmpty(filterName.Name))
                 return null;
 
             try
             {
                 IBaseFilter NewFilter = null;
+
+                // try load from system first
                 foreach (Filter filter in Filters.LegacyFilters)
                 {
-                    if (String.Compare(filter.Name, strFilterName, true) == 0 && (clsid == Guid.Empty || filter.CLSID == clsid))
+                    if (String.Compare(filter.Name, filterName.Name, true) == 0 &&
+                        (clsid == Guid.Empty || filter.CLSID == clsid))
                     {
                         NewFilter = (IBaseFilter)Marshal.BindToMoniker(filter.MonikerString);
-
-                        int hr = graphBuilder.AddFilter(NewFilter, strFilterName);
-                        if (hr < 0)
-                        {
-                            log.Error("Unable to add filter: {0} to graph", strFilterName);
-                            NewFilter = null;
-                        }
-                        else
-                        {
-                            log.Debug("Added filter: {0} to graph", strFilterName);
-                        }
-                        break;
                     }
                 }
+
+                // or use local lib
                 if (NewFilter == null)
                 {
-                    log.Error("Failed filter: {0} not found", strFilterName);
+                    if (!String.IsNullOrEmpty(filterName.Filename) && filterName.CLSID != Guid.Empty)
+                    {
+                        string dllPath = Path.Combine(baseDir, filterName.Filename);
+                        NewFilter = FilterFromFile.LoadFilterFromDll(dllPath, filterName.CLSID,
+                            !Path.IsPathRooted(dllPath));
+                    }
                 }
+
+                int hr = graphBuilder.AddFilter(NewFilter, filterName.Name);
+                if (hr < 0)
+                {
+                    log.Error("Unable to add filter: {0} to graph", filterName);
+                    NewFilter = null;
+                }
+                else
+                {
+                    log.Debug("Added filter: {0} to graph", filterName);
+                }
+
+                if (NewFilter == null)
+                {
+                    log.Error("Failed filter: {0} not found", filterName);
+                }
+
                 return NewFilter;
             }
             catch (Exception ex)
             {
-                log.Error(ex, "Error adding filter: {0} to graph", strFilterName);
+                log.Error(ex, "Error adding filter: {0} to graph", filterName);
                 return null;
             }
         }
