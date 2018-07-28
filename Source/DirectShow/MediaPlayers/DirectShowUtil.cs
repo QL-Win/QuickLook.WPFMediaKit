@@ -21,24 +21,24 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             {
                 IBaseFilter NewFilter = null;
 
-                // try load from system first
-                foreach (Filter filter in Filters.LegacyFilters)
+                // use local lib
+                if (!String.IsNullOrEmpty(filterName.Filename) && filterName.CLSID != Guid.Empty)
                 {
-                    if (String.Compare(filter.Name, filterName.Name, true) == 0 &&
-                        (clsid == Guid.Empty || filter.CLSID == clsid))
-                    {
-                        NewFilter = (IBaseFilter)Marshal.BindToMoniker(filter.MonikerString);
-                    }
+                    string dllPath = Path.Combine(baseDir, filterName.Filename);
+                    NewFilter = FilterFromFile.LoadFilterFromDll(dllPath, filterName.CLSID,
+                        !Path.IsPathRooted(dllPath));
                 }
 
-                // or use local lib
+                // or try load from system
                 if (NewFilter == null)
                 {
-                    if (!String.IsNullOrEmpty(filterName.Filename) && filterName.CLSID != Guid.Empty)
+                    foreach (Filter filter in Filters.LegacyFilters)
                     {
-                        string dllPath = Path.Combine(baseDir, filterName.Filename);
-                        NewFilter = FilterFromFile.LoadFilterFromDll(dllPath, filterName.CLSID,
-                            !Path.IsPathRooted(dllPath));
+                        if (String.Compare(filter.Name, filterName.Name, true) == 0 &&
+                            (clsid == Guid.Empty || filter.CLSID == clsid))
+                        {
+                            NewFilter = (IBaseFilter) Marshal.BindToMoniker(filter.MonikerString);
+                        }
                     }
                 }
 
