@@ -1,6 +1,6 @@
 ﻿#region Usings
 using System;
-using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using DirectShowLib;
 #endregion
@@ -311,6 +311,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         /// <summary>
         /// Opens the media by initializing the DirectShow graph
         /// </summary>
+        [HandleProcessCorruptedStateExceptions]
         protected virtual void OpenSource()
         {
             /* Make sure we clean up any remaining mess */
@@ -501,6 +502,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             InvokeMediaOpened();
         }
 
+        [HandleProcessCorruptedStateExceptions]
         private bool oldOpenSource()
         {
             /* Make sure we clean up any remaining mess */

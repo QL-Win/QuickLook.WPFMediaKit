@@ -3,6 +3,7 @@ using System;
 using System.Windows;
 using WPFMediaKit.DirectShow.Controls;
 using System.Linq;
+using WPFMediaKit.DirectShow.MediaPlayers;
 
 namespace Test_Application
 {
@@ -20,12 +21,19 @@ namespace Test_Application
             this.Closing += MainWindow_Closing;
             this.mediaUriElement.MediaFailed += MediaUriElement_MediaFailed;
             this.mediaUriElement.MediaUriPlayer.MediaPositionChanged += MediaUriPlayer_MediaPositionChanged;
+            this.mediaUriElement.MediaEnded += MediaUriElement_MediaEnded;
 
             if (MultimediaUtil.VideoInputDevices.Any())
             {
                 cobVideoSource.ItemsSource = MultimediaUtil.VideoInputNames;
             }
             SetCameraCaptureElementVisible(false);
+        }
+
+        private void MediaUriElement_MediaEnded(object sender, RoutedEventArgs e)
+        {
+            mediaUriElement.Stop();
+            mediaUriElement.MediaPosition = 0;
         }
 
         private void SetCameraCaptureElementVisible(bool visible)
@@ -63,6 +71,8 @@ namespace Test_Application
             var result = dlg.ShowDialog();
             if (result != true)
                 return;
+
+
             errorText.Text = null;
             SetCameraCaptureElementVisible(false);
             mediaUriElement.Source = new Uri(dlg.FileName);

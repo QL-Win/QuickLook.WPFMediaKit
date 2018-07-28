@@ -1022,6 +1022,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             if (m_mediaControl != null)
             {
                 m_mediaControl.Run();
+                StartGraphPollTimer();
                 PlayerState = PlayerState.Playing;
             }
                 
