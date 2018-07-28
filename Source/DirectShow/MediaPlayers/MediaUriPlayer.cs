@@ -470,8 +470,6 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 #endif
                 /* Configure the graph in the base class */
                 SetupFilterGraph(m_graph);
-
-                HasVideo = true;
                 
                 GetFrameStepInterface();
 
