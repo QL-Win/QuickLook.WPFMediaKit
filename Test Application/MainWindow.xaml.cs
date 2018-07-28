@@ -15,7 +15,7 @@ namespace Test_Application
         {
             InitializeComponent();
 
-            this.mediaUriElement.MediaUriPlayer.LAVFilterDirectory = "LAVFilters-0.72-x86\\";
+            this.mediaUriElement.MediaUriPlayer.LAVFilterDirectory = IntPtr.Size == 8 ? "LAVFilters-0.72-x64\\" : "LAVFilters-0.72-x86\\";
 
             this.Closing += MainWindow_Closing;
             this.mediaUriElement.MediaFailed += MediaUriElement_MediaFailed;
