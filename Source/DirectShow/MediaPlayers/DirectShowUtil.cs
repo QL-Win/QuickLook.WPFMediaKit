@@ -17,6 +17,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             if (String.IsNullOrEmpty(filterName.Name))
                 return null;
 
+
             try
             {
                 IBaseFilter NewFilter = null;
@@ -24,9 +25,17 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 // use local lib
                 if (!String.IsNullOrEmpty(filterName.Filename) && filterName.CLSID != Guid.Empty)
                 {
-                    string dllPath = Path.Combine(baseDir, filterName.Filename);
-                    NewFilter = FilterFromFile.LoadFilterFromDll(dllPath, filterName.CLSID,
-                        !Path.IsPathRooted(dllPath));
+                    if (filterName.Name == "System AsyncFileSource")
+                    {
+                        NewFilter = (IBaseFilter)(new AsyncReader());
+                    }
+                    else
+                    {
+                        string dllPath = Path.Combine(baseDir, filterName.Filename);
+                        NewFilter = FilterFromFile.LoadFilterFromDll(dllPath, filterName.CLSID,
+                              !Path.IsPathRooted(dllPath));
+                    }
+
                 }
 
                 // or try load from system
@@ -37,7 +46,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                         if (String.Compare(filter.Name, filterName.Name, true) == 0 &&
                             (clsid == Guid.Empty || filter.CLSID == clsid))
                         {
-                            NewFilter = (IBaseFilter) Marshal.BindToMoniker(filter.MonikerString);
+                            NewFilter = (IBaseFilter)Marshal.BindToMoniker(filter.MonikerString);
                         }
                     }
                 }
@@ -45,24 +54,24 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 int hr = graphBuilder.AddFilter(NewFilter, filterName.Name);
                 if (hr < 0)
                 {
-                    log.Error("Unable to add filter: {0} to graph", filterName);
+                    log.Error("Unable to add filter: {0} to graph", filterName.Name);
                     NewFilter = null;
                 }
                 else
                 {
-                    log.Debug("Added filter: {0} to graph", filterName);
+                    log.Debug("Added filter: {0} to graph", filterName.Name);
                 }
 
                 if (NewFilter == null)
                 {
-                    log.Error("Failed filter: {0} not found", filterName);
+                    log.Error("Failed filter: {0} not found", filterName.Name);
                 }
 
                 return NewFilter;
             }
             catch (Exception ex)
             {
-                log.Error(ex, "Error adding filter: {0} to graph", filterName);
+                log.Error(ex, "Error adding filter: {0} to graph", filterName.Name);
                 return null;
             }
         }
@@ -219,7 +228,8 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 }
             }
         }
-
-
+                     
     }
+
+   
 }
