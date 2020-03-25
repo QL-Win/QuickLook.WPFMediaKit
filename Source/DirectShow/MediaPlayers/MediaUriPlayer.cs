@@ -21,6 +21,9 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
     [ComImport, Guid("171252A0-8820-4AFE-9DF8-5C92B2D66B04")]
     public class LAVSplitter { }
 
+    [ComImport]
+    [Guid("e436ebb5-524f-11ce-9f53-0020af0ba770")]
+    public class AsyncReader { }
 
 
     /// <summary>
@@ -65,8 +68,15 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         {
             LAVFilterDirectory = "./";
 
-            Splitter = new FilterName("LAV Splitter", ClassId.LAVFilter, "LAVSplitter.ax");
+            //we are going to use this source for playback because it does not lock the file
+            AsyncFileSource = new FilterName("System AsyncFileSource", ClassId.FilesyncSource, "Not applicable");
+
+            //we are only using this source for determine if stream has video(bool HasVideo) NOT for playback
+            // because this source locks the file
             SplitterSource = new FilterName("LAV Splitter Source", ClassId.LAVFilterSource, "LAVSplitter.ax");
+
+
+            Splitter = new FilterName("LAV Splitter", ClassId.LAVFilter, "LAVSplitter.ax");
             VideoDecoder = new FilterName("LAV Video Decoder", ClassId.LAVFilterVideo, "LAVVideo.ax");
             AudioDecoder = new FilterName("LAV Audio Decoder", ClassId.LAVFilterAudio, "LAVAudio.ax");
         }
@@ -96,6 +106,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             }
         }
 
+
         /// <summary>
         /// Return Source as a string path or uri.
         /// </summary>
@@ -120,12 +131,12 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             get;
             set;
         }
-        
+
         /// <summary>
         /// Implementation of framestepinterface to step video forward by minimum of one frame e.g. by mousewheel
         /// </summary>
         private IVideoFrameStep frameStep;
-        
+
         /// <summary>
         /// step the frames
         /// </summary>
@@ -306,7 +317,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         public FilterName SplitterSource { get; set; }
         public FilterName VideoDecoder { get; set; }
         public FilterName AudioDecoder { get; set; }
-
+        public FilterName AsyncFileSource { get; set; }
 
         /// <summary>
         /// Opens the media by initializing the DirectShow graph
@@ -314,6 +325,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         [HandleProcessCorruptedStateExceptions]
         protected virtual void OpenSource()
         {
+
             /* Make sure we clean up any remaining mess */
             FreeResources();
 
@@ -324,6 +336,9 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
             try
             {
+                //lets get over with it right here
+                HasVideo = DoesItHaveVideo(FileSource);
+
                 /* Creates the GraphBuilder COM object */
                 m_graph = new FilterGraphNoThread() as IGraphBuilder;
 
@@ -352,48 +367,23 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                  hr = m_graph.AddFilter(sourceFilter, SplitterSource);
                  DsError.ThrowExceptionForHR(hr);*/
 
-                sourceFilter = DirectShowUtil.AddFilterToGraph(m_graph, SplitterSource,LAVFilterDirectory, Guid.Empty);
+
+
+
+                //we are using AsyncFileSource here, so that file will not be locked during preview
+                sourceFilter = DirectShowUtil.AddFilterToGraph(m_graph, AsyncFileSource, LAVFilterDirectory, Guid.Empty);
                 if (sourceFilter == null)
                     throw new WPFMediaKitException("Could not add SplitterSource to graph.");
+
 
                 IFileSourceFilter interfaceFile = (IFileSourceFilter)sourceFilter;
                 hr = interfaceFile.Load(fileSource, null);
                 DsError.ThrowExceptionForHR(hr);
 
+                // we are going to need LavSpltter here, to connect AsyncFileSource with VideoDecoder 
+                DirectShowUtil.AddFilterToGraph(m_graph, Splitter, LAVFilterDirectory, Guid.Empty);
 
-                // Set Video Codec
-                // Remove Pin
-                var videoPinFrom = DirectShowLib.DsFindPin.ByName(sourceFilter, "Video");
-                IPin videoPinTo;
-                if (videoPinFrom != null)
-                {
-                    hr = videoPinFrom.ConnectedTo(out videoPinTo);
-                    if (hr >= 0 && videoPinTo != null)
-                    {
-                        PinInfo pInfo;
-                        videoPinTo.QueryPinInfo(out pInfo);
-                        FilterInfo fInfo;
-                        pInfo.filter.QueryFilterInfo(out fInfo);
-
-                        DirectShowUtil.DisconnectAllPins(m_graph, pInfo.filter);
-                        m_graph.RemoveFilter(pInfo.filter);
-
-                        DsUtils.FreePinInfo(pInfo);
-                        Marshal.ReleaseComObject(fInfo.pGraph);
-                        Marshal.ReleaseComObject(videoPinTo);
-                        videoPinTo = null;
-                    }
-                    Marshal.ReleaseComObject(videoPinFrom);
-                    videoPinFrom = null;
-
-                    HasVideo = true;
-                }
-                else
-                {
-                    HasVideo = false;
-                }
-
-                DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder,LAVFilterDirectory, Guid.Empty);
+                DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder, LAVFilterDirectory, Guid.Empty);
 
                 try
                 {
@@ -470,9 +460,8 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 #endif
                 /* Configure the graph in the base class */
                 SetupFilterGraph(m_graph);
-                
-                GetFrameStepInterface();
 
+                GetFrameStepInterface();
             }
             catch (Exception ex)
             {
@@ -499,6 +488,87 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
             InvokeMediaOpened();
         }
+
+        private bool DoesItHaveVideo(string filename)
+        {
+            if (string.IsNullOrEmpty(filename))
+                return false;
+            bool result;
+            IGraphBuilder temp_graph = new FilterGraphNoThread() as IGraphBuilder;
+            try
+            {
+
+                if (temp_graph == null)
+                    throw new WPFMediaKitException("Could not create a graph");
+
+                var filterGraph = temp_graph as IFilterGraph2;
+
+                if (filterGraph == null)
+                    throw new WPFMediaKitException("Could not QueryInterface for the IFilterGraph2");
+
+                IBaseFilter sourceFilter;
+                int hr;
+
+                sourceFilter = DirectShowUtil.AddFilterToGraph(temp_graph, SplitterSource, LAVFilterDirectory, Guid.Empty);
+                if (sourceFilter == null)
+                    throw new WPFMediaKitException("Could not add SplitterSource to graph.");
+
+
+
+                IFileSourceFilter interfaceFile = (IFileSourceFilter)sourceFilter;
+                hr = interfaceFile.Load(filename, null);
+                DsError.ThrowExceptionForHR(hr);
+
+
+
+
+                // Set Video Codec
+                // Remove Pin
+                var videoPinFrom = DirectShowLib.DsFindPin.ByName(sourceFilter, "Video");
+                IPin videoPinTo;
+                if (videoPinFrom != null)
+                {
+                    hr = videoPinFrom.ConnectedTo(out videoPinTo);
+                    if (hr >= 0 && videoPinTo != null)
+                    {
+                        PinInfo pInfo;
+                        videoPinTo.QueryPinInfo(out pInfo);
+                        FilterInfo fInfo;
+                        pInfo.filter.QueryFilterInfo(out fInfo);
+
+                        DirectShowUtil.DisconnectAllPins(temp_graph, pInfo.filter);
+                        temp_graph.RemoveFilter(pInfo.filter);
+
+                        DsUtils.FreePinInfo(pInfo);
+                        Marshal.ReleaseComObject(fInfo.pGraph);
+                        Marshal.ReleaseComObject(videoPinTo);
+                        videoPinTo = null;
+                    }
+                    Marshal.ReleaseComObject(videoPinFrom);
+                    videoPinFrom = null;
+
+                    result = true;
+                }
+                else
+                {
+                    result = false;
+                }
+              
+                DirectShowUtil.RemoveFilters(temp_graph, SplitterSource.Name);
+                Marshal.ReleaseComObject(sourceFilter);                
+
+            }
+            catch
+            { result = false; }
+            finally
+            {
+
+                Marshal.ReleaseComObject(temp_graph);
+
+            }
+            return result;
+        }
+
 
         [HandleProcessCorruptedStateExceptions]
         private bool oldOpenSource()
@@ -670,7 +740,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 audioPinFrom = null;
             }
 
-            DirectShowUtil.AddFilterToGraph(m_graph, audioDecoder,LAVFilterDirectory, Guid.Empty);
+            DirectShowUtil.AddFilterToGraph(m_graph, audioDecoder, LAVFilterDirectory, Guid.Empty);
         }
 
         /// <summary>
@@ -692,7 +762,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
              * Dispatcher VeryifyAccess() issues because
              * this may be called from the GC */
             StopInternal();
-            
+
             if (m_graph != null)
             {
                 DirectShowUtil.RemoveFilters(m_graph);
