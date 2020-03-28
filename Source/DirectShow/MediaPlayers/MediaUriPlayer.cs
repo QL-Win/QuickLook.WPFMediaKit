@@ -338,7 +338,9 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             {
                 //lets get over with it right here
                 HasVideo = DoesItHaveVideo(FileSource);
-
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+               
                 /* Creates the GraphBuilder COM object */
                 m_graph = new FilterGraphNoThread() as IGraphBuilder;
 
@@ -555,7 +557,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 }
               
                 DirectShowUtil.RemoveFilters(temp_graph, SplitterSource.Name);
-                Marshal.ReleaseComObject(sourceFilter);                
+                Marshal.FinalReleaseComObject(sourceFilter);                
 
             }
             catch
