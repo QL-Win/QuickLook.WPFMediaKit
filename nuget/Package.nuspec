@@ -6,8 +6,8 @@
     <authors>WPF MediaKit Team</authors>
     <owners>WPF MediaKit Team</owners>
     <icon>app.png</icon>
-    <licenseUrl>https://github.com/QL-Win/WPF-MediaKit/blob/master/License.txt</licenseUrl>
-    <projectUrl>https://github.com/QL-Win/WPF-MediaKit</projectUrl>   
+    <licenseUrl>https://github.com/QL-Win/QuickLook.WPF-MediaKit/blob/master/License.txt</licenseUrl>
+    <projectUrl>https://github.com/QL-Win/QuickLook.WPF-MediaKit</projectUrl>   
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>This package is part of QuickLook program. A library to quickly build DirectShow and MediaFoundation media player controls in WPF. The kit comes with a MediaElement replacement, a VideoCaptureElement for web cams and a DVDPlayerElement that plays DVDs and supports interactive menus.</description>
     <releaseNotes>Some bugfixes and performance improvements.</releaseNotes>
