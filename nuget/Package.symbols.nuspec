@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>QuickLook.WPFMediaKit</id>
-    <version>2.3.0</version>
+    <version>2.3.1</version>
     <authors>WPF MediaKit Team</authors>
     <owners>WPF MediaKit Team</owners>
     <icon>app.png</icon>

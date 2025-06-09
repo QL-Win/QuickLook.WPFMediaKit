@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Test_Application"
-        xmlns:controls="clr-namespace:WPFMediaKit.DirectShow.Controls;assembly=WPFMediaKit"
-        xmlns:players="clr-namespace:WPFMediaKit.DirectShow.MediaPlayers;assembly=WPFMediaKit"
+        xmlns:controls="clr-namespace:WPFMediaKit.DirectShow.Controls;assembly=QuickLook.WPFMediaKit"
+        xmlns:players="clr-namespace:WPFMediaKit.DirectShow.MediaPlayers;assembly=QuickLook.WPFMediaKit"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="825" >
     <Window.Resources>

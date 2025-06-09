@@ -25,4 +25,4 @@ using System.Windows;
 
 
 
-[assembly: AssemblyVersion("2.3.0")]
+[assembly: AssemblyVersion("2.3.1")]
