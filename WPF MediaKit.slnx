@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Source/WPF MediaKit.csproj" />
+  <Project Path="Test Application/Test Application.csproj" />
+</Solution>
