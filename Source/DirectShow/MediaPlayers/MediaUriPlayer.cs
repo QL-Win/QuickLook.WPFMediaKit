@@ -33,6 +33,25 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MediaUriPlayer));
 
+        private static readonly LAVHWAccel[] LAVHWAccelPriority = new[]
+        {
+            LAVHWAccel.HWAccel_D3D11,
+            LAVHWAccel.HWAccel_DXVA2Native,
+            LAVHWAccel.HWAccel_DXVA2CopyBack,
+            LAVHWAccel.HWAccel_QuickSync,
+            LAVHWAccel.HWAccel_CUDA
+        };
+
+        private static readonly LAVVideoHWCodec[] LAVHWCodecsToEnable = new[]
+        {
+            LAVVideoHWCodec.HWCodec_H264,
+            LAVVideoHWCodec.HWCodec_VC1,
+            LAVVideoHWCodec.HWCodec_MPEG2,
+            LAVVideoHWCodec.HWCodec_HEVC,
+            LAVVideoHWCodec.HWCodec_VP9,
+            LAVVideoHWCodec.HWCodec_AV1
+        };
+
         /// <summary>
         /// The name of the default audio render.  This is the
         /// same on all versions of windows
@@ -67,6 +86,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         public MediaUriPlayer()
         {
             LAVFilterDirectory = "./";
+            EnableLAVHardwareAcceleration = true;
 
             //we are going to use this source for playback because it does not lock the file
             AsyncFileSource = new FilterName("System AsyncFileSource", ClassId.FilesyncSource, "Not applicable");
@@ -313,6 +333,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         }
 
         public string LAVFilterDirectory { get; set; }
+        public bool EnableLAVHardwareAcceleration { get; set; }
         public FilterName Splitter { get; set; }
         public FilterName SplitterSource { get; set; }
         public FilterName VideoDecoder { get; set; }
@@ -385,7 +406,8 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 // we are going to need LavSpltter here, to connect AsyncFileSource with VideoDecoder 
                 DirectShowUtil.AddFilterToGraph(m_graph, Splitter, LAVFilterDirectory, Guid.Empty);
 
-                DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder, LAVFilterDirectory, Guid.Empty);
+                var videoDecoderFilter = DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder, LAVFilterDirectory, Guid.Empty);
+                ConfigureLAVVideoHardwareAcceleration(videoDecoderFilter);
 
                 try
                 {
@@ -743,6 +765,65 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             }
 
             DirectShowUtil.AddFilterToGraph(m_graph, audioDecoder, LAVFilterDirectory, Guid.Empty);
+        }
+
+        private void ConfigureLAVVideoHardwareAcceleration(IBaseFilter videoDecoderFilter)
+        {
+            if (!EnableLAVHardwareAcceleration || videoDecoderFilter == null)
+                return;
+
+            var settings = videoDecoderFilter as ILAVVideoSettings;
+            if (settings == null)
+                return;
+
+            try
+            {
+                int hr = settings.SetRuntimeConfig(true);
+                if (hr < 0)
+                {
+                    log.Warn("Unable to switch LAV Video to runtime configuration mode (hr=0x{0:X8}).", hr);
+                    return;
+                }
+
+                LAVHWAccel selected = LAVHWAccel.HWAccel_None;
+                foreach (LAVHWAccel accel in LAVHWAccelPriority)
+                {
+                    if (settings.CheckHWAccelSupport(accel) > 0)
+                    {
+                        selected = accel;
+                        break;
+                    }
+                }
+
+                if (selected == LAVHWAccel.HWAccel_None)
+                {
+                    log.Info("No supported LAV hardware acceleration backend was detected.");
+                    return;
+                }
+
+                hr = settings.SetHWAccel(selected);
+                if (hr < 0)
+                {
+                    log.Warn("Failed to set LAV hardware acceleration backend {0} (hr=0x{1:X8}).", selected, hr);
+                    return;
+                }
+
+                foreach (LAVVideoHWCodec codec in LAVHWCodecsToEnable)
+                {
+                    settings.SetHWAccelCodec(codec, true);
+                }
+
+                settings.SetHWAccelResolutionFlags(
+                    LAVHWResFlag.LAVHWResFlag_SD |
+                    LAVHWResFlag.LAVHWResFlag_HD |
+                    LAVHWResFlag.LAVHWResFlag_UHD);
+
+                log.Info("Enabled LAV hardware acceleration backend: {0}", selected);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex, "Failed to configure LAV Video hardware acceleration.");
+            }
         }
 
         /// <summary>

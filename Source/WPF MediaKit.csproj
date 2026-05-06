@@ -86,6 +86,7 @@
     <Compile Include="DirectShow\MediaPlayers\FilterFromFile.cs" />
     <Compile Include="DirectShow\MediaPlayers\FilterName.cs" />
     <Compile Include="DirectShow\MediaPlayers\Filters.cs" />
+    <Compile Include="DirectShow\MediaPlayers\LAVVideoSettings.cs" />
     <Compile Include="DirectShow\MediaPlayers\MediaDetector.cs" />
     <Compile Include="DirectShow\MediaPlayers\MediaSeekingPlayer.cs" />
     <Compile Include="DirectShow\MediaPlayers\MediaUriPlayer.cs" />
