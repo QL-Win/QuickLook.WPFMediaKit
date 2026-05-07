@@ -279,7 +279,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
 
 
-                    filterOutputString += string.Format("{0:X8}", Marshal.GetIUnknownForObjectInContext(filters[0]).ToInt32()) + " ";
+                    filterOutputString += string.Format("{0:X8}", Marshal.GetIUnknownForObject(filters[0]).ToInt32()) + " ";
 
                     filterOutputString += filterInfo.achName + Environment.NewLine;
 
@@ -303,7 +303,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                             prefix = "[Out] ";
 
 
-                        filterOutputString += string.Format("{0:X8}", Marshal.GetIUnknownForObjectInContext(pins[0]).ToInt32()) + " ";
+                        filterOutputString += string.Format("{0:X8}", Marshal.GetIUnknownForObject(pins[0]).ToInt32()) + " ";
                         filterOutputString += prefix + pinInfo.name + Environment.NewLine;
 
                         Marshal.ReleaseComObject(pins[0]);
