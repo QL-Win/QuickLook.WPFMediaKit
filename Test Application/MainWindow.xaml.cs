@@ -16,7 +16,14 @@ namespace Test_Application
         {
             InitializeComponent();
 
-            this.mediaUriElement.MediaUriPlayer.LAVFilterDirectory = IntPtr.Size == 8 ? "LAVFilters-0.72-x64\\" : "LAVFilters-0.72-x86\\";
+            this.mediaUriElement.MediaUriPlayer.LAVFilterDirectory = IntPtr.Size == 8 ? "LAVFilters-x64\\" : "LAVFilters-x86\\";
+
+            // initialize checkbox to current player setting (if present)
+            try
+            {
+                chkEnableLAVHW.IsChecked = this.mediaUriElement.MediaUriPlayer.EnableLAVHardwareAcceleration;
+            }
+            catch { }
 
             this.Closing += MainWindow_Closing;
             this.mediaUriElement.MediaFailed += MediaUriElement_MediaFailed;
@@ -148,6 +155,41 @@ namespace Test_Application
                 return;
             SetCameraCaptureElementVisible(true);
             cameraCaptureElement.VideoCaptureDevice = MultimediaUtil.VideoInputDevices[cobVideoSource.SelectedIndex];
+        }
+        
+        private void chkEnableLAVHW_Checked(object sender, RoutedEventArgs e)
+        {
+            SetEnableLAVHardwareAcceleration(true);
+        }
+
+        private void chkEnableLAVHW_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SetEnableLAVHardwareAcceleration(false);
+        }
+
+        private void SetEnableLAVHardwareAcceleration(bool enable)
+        {
+            if (mediaUriElement == null || mediaUriElement.MediaUriPlayer == null)
+                return;
+
+            var player = mediaUriElement.MediaUriPlayer;
+
+            if (mediaUriElement.Source == null)
+            {
+                // No source loaded yet – just store the flag for the next Open
+                player.Dispatcher.BeginInvoke((Action)(() =>
+                    player.EnableLAVHardwareAcceleration = enable));
+                return;
+            }
+
+            // Dispatch to the player's own MTA thread.
+            // ApplyHardwareAcceleration will call OpenSource() there, which
+            // rebuilds the full graph (incl. EVR/VMR9 allocator) so that
+            // NewAllocatorSurface fires and the WPF back buffer is refreshed.
+            // Position + play state are restored inside ApplyHardwareAcceleration
+            // via a MediaOpened callback.
+            player.Dispatcher.BeginInvoke((Action)(() =>
+                player.ApplyHardwareAcceleration(enable)));
         }
         
         private void btnFrameStep_Click(object sender, RoutedEventArgs e)

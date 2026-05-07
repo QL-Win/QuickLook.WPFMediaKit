@@ -41,6 +41,8 @@
                              VerticalAlignment="Center" Margin="4,0" />
                 <TextBlock Text="Deeper Color:" VerticalAlignment="Center" Margin="4" />
                 <CheckBox x:Name="chkDeeperColor" VerticalAlignment="Center" Margin="0,0,4,0" />
+                <CheckBox x:Name="chkEnableLAVHW" Content="Enable LAV HW Accel" VerticalAlignment="Center" Margin="4,0,4,0"
+                          Checked="chkEnableLAVHW_Checked" Unchecked="chkEnableLAVHW_Unchecked" />
             </StackPanel>
         </Grid>
         <TextBlock x:Name="errorText" Grid.Row="1" TextWrapping="Wrap" Foreground="IndianRed" Margin="4" />

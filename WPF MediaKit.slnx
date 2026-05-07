@@ -1,4 +1,4 @@
 <Solution>
-  <Project Path="Source/WPF MediaKit.csproj" />
-  <Project Path="Test Application/Test Application.csproj" />
+  <Project Path="Source/WPF MediaKit.csproj" Id="73154957-3d91-48da-8068-d425b523ed93" />
+  <Project Path="Test Application/Test Application.csproj" Id="77dd70c4-de32-4a31-ae22-675f5758fb5f" />
 </Solution>

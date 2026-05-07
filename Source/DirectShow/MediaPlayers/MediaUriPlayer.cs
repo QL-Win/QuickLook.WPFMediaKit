@@ -1,8 +1,8 @@
 ﻿#region Usings
+using DirectShowLib;
 using System;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using DirectShowLib;
 #endregion
 
 namespace WPFMediaKit.DirectShow.MediaPlayers
@@ -81,7 +81,6 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         {
             get { return m_graph; }
         }
-
 
         public MediaUriPlayer()
         {
@@ -402,10 +401,10 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                 hr = interfaceFile.Load(fileSource, null);
                 DsError.ThrowExceptionForHR(hr);
 
-                // we are going to need LavSpltter here, to connect AsyncFileSource with VideoDecoder 
+                // we are going to need LavSplitter here, to connect AsyncFileSource with VideoDecoder 
                 DirectShowUtil.AddFilterToGraph(m_graph, Splitter, LAVFilterDirectory, Guid.Empty);
 
-                var videoDecoderFilter = DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder, LAVFilterDirectory, Guid.Empty);
+                IBaseFilter videoDecoderFilter = DirectShowUtil.AddFilterToGraph(m_graph, VideoDecoder, LAVFilterDirectory, Guid.Empty);
                 ConfigureLAVVideoHardwareAcceleration(videoDecoderFilter);
 
                 try
@@ -449,8 +448,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
                     if (mixer != null)
                     {
-                        VMR9MixerPrefs dwPrefs;
-                        mixer.GetMixingPrefs(out dwPrefs);
+                        mixer.GetMixingPrefs(out VMR9MixerPrefs dwPrefs);
                         dwPrefs &= ~VMR9MixerPrefs.RenderTargetMask;
                         dwPrefs |= VMR9MixerPrefs.RenderTargetRGB;
                         //mixer.SetMixingPrefs(dwPrefs);
@@ -771,8 +769,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             if (!EnableLAVHardwareAcceleration || videoDecoderFilter == null)
                 return;
 
-            var settings = videoDecoderFilter as ILAVVideoSettings;
-            if (settings == null)
+            if (videoDecoderFilter is not ILAVVideoSettings settings)
                 return;
 
             try
@@ -823,6 +820,42 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             {
                 log.Error(ex, "Failed to configure LAV Video hardware acceleration.");
             }
+        }
+
+        /// <summary>
+        /// Apply a change to EnableLAVHardwareAcceleration on a live source by fully
+        /// rebuilding the DirectShow graph (OpenSource) and restoring the playback
+        /// position and play/pause state afterwards.
+        ///
+        /// Must be called on the player's own Dispatcher thread.
+        /// </summary>
+        public void ApplyHardwareAcceleration(bool enable)
+        {
+            // Save position and play state before graph teardown
+            long savedPosition = 0;
+            bool wasPlaying = (PlayerState == PlayerState.Playing);
+
+            try { savedPosition = MediaPosition; } catch { }
+
+            // Hook MediaOpened to restore state BEFORE calling OpenSource
+            // (OpenSource fires InvokeMediaOpened synchronously at its end)
+            void RestoreHandler()
+            {
+                MediaOpened -= RestoreHandler;
+                try { MediaPosition = savedPosition; } catch { }
+                if (wasPlaying)
+                    try { Play(); } catch { }
+                else
+                    try { Pause(); } catch { }
+            }
+
+            MediaOpened += RestoreHandler;
+
+            // Apply flag then let OpenSource fully rebuild the graph + allocator.
+            // OpenSource() calls FreeResources() → old EVR/VMR9 allocator is torn
+            // down → new allocator fires NewAllocatorSurface → WPF backbuffer updates.
+            EnableLAVHardwareAcceleration = enable;
+            OpenSource();
         }
 
         /// <summary>
