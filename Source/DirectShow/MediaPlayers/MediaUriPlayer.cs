@@ -86,7 +86,6 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         public MediaUriPlayer()
         {
             LAVFilterDirectory = "./";
-            EnableLAVHardwareAcceleration = true;
 
             //we are going to use this source for playback because it does not lock the file
             AsyncFileSource = new FilterName("System AsyncFileSource", ClassId.FilesyncSource, "Not applicable");
