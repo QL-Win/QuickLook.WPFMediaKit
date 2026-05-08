@@ -18,6 +18,8 @@
   <file src=".\app.png" target="" />
   <file src="WPFMediaKit.targets" target="build\QuickLook.WPFMediaKit.targets" />
   <file src="..\Source\bin\Release\QuickLook.WPFMediaKit.dll" target="lib\QuickLook.WPFMediaKit.dll" />
+  <file src="..\Source\bin\Release\QuickLook.WPFMediaKit.pdb" target="lib\QuickLook.WPFMediaKit.pdb" />
+  <file src="..\Source\bin\Release\QuickLook.WPFMediaKit.xml" target="lib\QuickLook.WPFMediaKit.xml" />
   <file src="..\Source\Assemblies\DirectShowLib-2005.dll" target="build\DirectShowLib-2005.dll" />
   <file src="..\EVR Presenter\bin\Release\x86\EVRPresenter32.dll" target="build\EVRPresenter32.dll"/>
   <file src="..\EVR Presenter\bin\Release\x64\EVRPresenter64.dll" target="build\EVRPresenter64.dll" />
