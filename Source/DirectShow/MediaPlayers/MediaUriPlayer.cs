@@ -33,24 +33,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MediaUriPlayer));
 
-        private static readonly LAVHWAccel[] LAVHWAccelPriority = new[]
-        {
-            LAVHWAccel.HWAccel_D3D11,
-            LAVHWAccel.HWAccel_DXVA2Native,
-            LAVHWAccel.HWAccel_DXVA2CopyBack,
-            LAVHWAccel.HWAccel_QuickSync,
-            LAVHWAccel.HWAccel_CUDA
-        };
 
-        private static readonly LAVVideoHWCodec[] LAVHWCodecsToEnable = new[]
-        {
-            LAVVideoHWCodec.HWCodec_H264,
-            LAVVideoHWCodec.HWCodec_VC1,
-            LAVVideoHWCodec.HWCodec_MPEG2,
-            LAVVideoHWCodec.HWCodec_HEVC,
-            LAVVideoHWCodec.HWCodec_VP9,
-            LAVVideoHWCodec.HWCodec_AV1
-        };
 
         /// <summary>
         /// The name of the default audio render.  This is the
@@ -781,40 +764,44 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                     return;
                 }
 
-                LAVHWAccel selected = LAVHWAccel.HWAccel_None;
-                foreach (LAVHWAccel accel in LAVHWAccelPriority)
+                // Check for CUDA support first since it is generally more performant,
+                // and if not available fallback to DXVA2 Native
+                if (settings.CheckHWAccelSupport(LAVHWAccel.HWAccel_CUDA) > 0)
                 {
-                    if (settings.CheckHWAccelSupport(accel) > 0)
-                    {
-                        selected = accel;
-                        break;
-                    }
+                    // HWAccel = 1 (CUDA)
+                    settings.SetHWAccel(LAVHWAccel.HWAccel_CUDA);
+                }
+                else
+                {
+                    // HWAccel = 4 (DXVA2 Native)
+                    settings.SetHWAccel(LAVHWAccel.HWAccel_DXVA2Native);
                 }
 
-                if (selected == LAVHWAccel.HWAccel_None)
-                {
-                    log.Info("No supported LAV hardware acceleration backend was detected.");
-                    return;
-                }
+                // Codec settings
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_H264, true);
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_VC1, true);
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_MPEG2, true);
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_MPEG4, false);
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_MPEG2DVD, true);
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_HEVC, true);
+                settings.SetHWAccelCodec(LAVVideoHWCodec.HWCodec_VP9, true);
 
-                hr = settings.SetHWAccel(selected);
-                if (hr < 0)
-                {
-                    log.Warn("Failed to set LAV hardware acceleration backend {0} (hr=0x{1:X8}).", selected, hr);
-                    return;
-                }
-
-                foreach (LAVVideoHWCodec codec in LAVHWCodecsToEnable)
-                {
-                    settings.SetHWAccelCodec(codec, true);
-                }
-
+                // HWResFlags = 7 (SD | HD | UHD)
                 settings.SetHWAccelResolutionFlags(
                     LAVHWResFlag.LAVHWResFlag_SD |
                     LAVHWResFlag.LAVHWResFlag_HD |
                     LAVHWResFlag.LAVHWResFlag_UHD);
 
-                log.Info("Enabled LAV hardware acceleration backend: {0}", selected);
+                // HWDeintMode = 0 (Weave), HWDeintOutput = 0 (FramePerField)
+                settings.SetHWAccelDeintMode(LAVHWDeintModes.HWDeintMode_Weave);
+                settings.SetHWAccelDeintOutput(LAVDeintOutput.DeintOutput_FramePerField);
+
+                // Device indices: 0xFFFFFFFF = auto (default device), descriptor = 0
+                settings.SetHWAccelDeviceIndex(LAVHWAccel.HWAccel_DXVA2, 0xFFFFFFFF, 0);
+                settings.SetHWAccelDeviceIndex(LAVHWAccel.HWAccel_DXVA2Native, 0xFFFFFFFF, 0);
+                settings.SetHWAccelDeviceIndex(LAVHWAccel.HWAccel_D3D11, 0xFFFFFFFF, 0);
+
+                log.Info("Enabled LAV hardware acceleration: DXVA2 Native.");
             }
             catch (Exception ex)
             {
