@@ -11,13 +11,13 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>This package is part of QuickLook program. A library to quickly build DirectShow and MediaFoundation media player controls in WPF. The kit comes with a MediaElement replacement, a VideoCaptureElement for web cams and a DVDPlayerElement that plays DVDs and supports interactive menus.</description>
     <releaseNotes>Some bugfixes and performance improvements.</releaseNotes>
-    <copyright>Copyright © 2015-2024 by WPF MediaKit Team</copyright>
+    <copyright>Copyright © 2015-2026 by WPF MediaKit Team and QL-Win Team</copyright>
     <tags>wpf video directshow evr dvd player media MediaFoundation</tags>
    </metadata>
   <files>
   <file src=".\app.png" target="" />
-  <file src="..\Source\bin\Release\QuickLook.WPFMediaKit.dll" target="lib\QuickLook.WPFMediaKit.dll" />
   <file src="WPFMediaKit.targets" target="build\QuickLook.WPFMediaKit.targets" />
+  <file src="..\Source\bin\Release\QuickLook.WPFMediaKit.dll" target="lib\QuickLook.WPFMediaKit.dll" />
   <file src="..\Source\Assemblies\DirectShowLib-2005.dll" target="build\DirectShowLib-2005.dll" />
   <file src="..\EVR Presenter\bin\Release\x86\EVRPresenter32.dll" target="build\EVRPresenter32.dll"/>
   <file src="..\EVR Presenter\bin\Release\x64\EVRPresenter64.dll" target="build\EVRPresenter64.dll" />

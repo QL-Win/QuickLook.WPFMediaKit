@@ -4,7 +4,8 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net462;net472;net48;net481</TargetFrameworks>
+    <TargetFramework>net462</TargetFramework>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <RootNamespace>WPFMediaKit</RootNamespace>
     <AssemblyName>QuickLook.WPFMediaKit</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
