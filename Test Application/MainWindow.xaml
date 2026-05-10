@@ -1,13 +1,16 @@
-﻿<Window x:Class="Test_Application.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Test_Application"
-        xmlns:controls="clr-namespace:WPFMediaKit.DirectShow.Controls;assembly=QuickLook.WPFMediaKit"
-        xmlns:players="clr-namespace:WPFMediaKit.DirectShow.MediaPlayers;assembly=QuickLook.WPFMediaKit"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="825" >
+﻿<Window
+    x:Class="Test_Application.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:WPFMediaKit.DirectShow.Controls;assembly=QuickLook.WPFMediaKit"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:Test_Application"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:players="clr-namespace:WPFMediaKit.DirectShow.MediaPlayers;assembly=QuickLook.WPFMediaKit"
+    Title="MainWindow"
+    Width="825"
+    Height="450"
+    mc:Ignorable="d">
     <Window.Resources>
         <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
     </Window.Resources>
@@ -24,44 +27,127 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="btnOpen" Click="btnOpen_Click" Content="Open file ..."  Padding="4" Margin="4" />
-                <Label Content="Select camera:" VerticalAlignment="Center"/>
-                <ComboBox x:Name="cobVideoSource" Width="100" SelectionChanged="cobVideoSource_SelectionChanged" VerticalAlignment="Center"/>
+            <StackPanel
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <Button
+                    x:Name="btnOpen"
+                    Margin="4"
+                    Padding="4"
+                    Click="btnOpen_Click"
+                    Content="Open file ..." />
+                <Label VerticalAlignment="Center" Content="Select camera:" />
+                <ComboBox
+                    x:Name="cobVideoSource"
+                    Width="100"
+                    VerticalAlignment="Center"
+                    SelectionChanged="cobVideoSource_SelectionChanged" />
             </StackPanel>
-            <StackPanel Orientation="Horizontal" Grid.Column="1">
-                <TextBlock Text="Playerstate:" VerticalAlignment="Center" Margin="3"/>
-                <TextBlock Text="{Binding ElementName=mediaUriElement,Path=PlayerState}" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" Orientation="Horizontal">
+                <TextBlock
+                    Margin="3"
+                    VerticalAlignment="Center"
+                    Text="Playerstate:" />
+                <TextBlock VerticalAlignment="Center" Text="{Binding ElementName=mediaUriElement, Path=PlayerState}" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                <TextBlock Text="Video Renderer:" VerticalAlignment="Center" Margin="4" />
-                <RadioButton Content="VMR9" IsChecked="{Binding VideoRenderer, ElementName=mediaUriElement, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static players:VideoRendererType.VideoMixingRenderer9}}"
-                             VerticalAlignment="Center" />
-                <RadioButton Content="EVR" IsChecked="{Binding VideoRenderer, ElementName=mediaUriElement, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static players:VideoRendererType.EnhancedVideoRenderer}}"
-                             VerticalAlignment="Center" Margin="4,0" />
-                <TextBlock Text="Deeper Color:" VerticalAlignment="Center" Margin="4" />
-                <CheckBox x:Name="chkDeeperColor" VerticalAlignment="Center" Margin="0,0,4,0" />
-                <CheckBox x:Name="chkEnableLAVHW" Content="Enable LAV HW Accel" VerticalAlignment="Center" Margin="4,0,4,0"
-                          Checked="chkEnableLAVHW_Checked" Unchecked="chkEnableLAVHW_Unchecked" />
+            <StackPanel
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Orientation="Horizontal">
+                <TextBlock
+                    Margin="4"
+                    VerticalAlignment="Center"
+                    Text="Video Renderer:" />
+                <RadioButton
+                    VerticalAlignment="Center"
+                    Content="VMR9"
+                    IsChecked="{Binding VideoRenderer, ElementName=mediaUriElement, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static players:VideoRendererType.VideoMixingRenderer9}}" />
+                <RadioButton
+                    Margin="4,0"
+                    VerticalAlignment="Center"
+                    Content="EVR"
+                    IsChecked="{Binding VideoRenderer, ElementName=mediaUriElement, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter={x:Static players:VideoRendererType.EnhancedVideoRenderer}}" />
+                <CheckBox
+                    x:Name="chkDeeperColor"
+                    Margin="4,0,4,0"
+                    VerticalAlignment="Center"
+                    Content="Deeper Color" />
+                <CheckBox
+                    x:Name="chkEnableLAVHW"
+                    Margin="4,0,4,0"
+                    VerticalAlignment="Center"
+                    Checked="chkEnableLAVHW_Checked"
+                    Content="Enable LAV HW Accel"
+                    Unchecked="chkEnableLAVHW_Unchecked" />
             </StackPanel>
         </Grid>
-        <TextBlock x:Name="errorText" Grid.Row="1" TextWrapping="Wrap" Foreground="IndianRed" Margin="4" />
-        <controls:MediaUriElement x:Name="mediaUriElement" Grid.Row="1"
-                                  DeeperColor="{Binding IsChecked, ElementName=chkDeeperColor}"
-                                  Margin="4" SpeedRatio="{Binding Path=Value, ElementName=ratioSlider}" />
-        <controls:VideoCaptureElement x:Name="cameraCaptureElement" Grid.Row="1" EnableSampleGrabbing="False" Visibility="Collapsed"
-                                      DeeperColor="{Binding IsChecked, ElementName=chkDeeperColor}"
-                                      Margin="4"/>
-        <Slider x:Name="slider" Grid.Row="2" IsMoveToPointEnabled="True" Orientation="Horizontal" ValueChanged="slider_ValueChanged" Margin="4" />
+        <TextBlock
+            x:Name="errorText"
+            Grid.Row="1"
+            Margin="4"
+            Foreground="IndianRed"
+            TextWrapping="Wrap" />
+        <controls:MediaUriElement
+            x:Name="mediaUriElement"
+            Grid.Row="1"
+            Margin="4"
+            DeeperColor="{Binding IsChecked, ElementName=chkDeeperColor}"
+            SpeedRatio="{Binding Path=Value, ElementName=ratioSlider}" />
+        <controls:VideoCaptureElement
+            x:Name="cameraCaptureElement"
+            Grid.Row="1"
+            Margin="4"
+            DeeperColor="{Binding IsChecked, ElementName=chkDeeperColor}"
+            EnableSampleGrabbing="False"
+            Visibility="Collapsed" />
+        <Slider
+            x:Name="slider"
+            Grid.Row="2"
+            Margin="4"
+            IsMoveToPointEnabled="True"
+            Orientation="Horizontal"
+            ValueChanged="slider_ValueChanged" />
         <StackPanel Grid.Row="3" Orientation="Horizontal">
-            <Button x:Name="btnStop" Click="btnStop_Click" Content="Stop" MinWidth="50" Padding="4" Margin="4" />
-            <Button x:Name="btnPause" Click="btnPause_Click" Content="Pause" MinWidth="50" Padding="4" Margin="4" />
-            <Button x:Name="btnFrameStep" Click="btnFrameStep_Click" Content="Framestep +1" Padding="4" Margin="4"></Button>
-            <Border BorderBrush="Gray" Background="LightGray" BorderThickness="1" Height="26">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Speedratio" Margin="3,0,0,0"/>
-                    <TextBlock Text="{Binding Path=Value,ElementName=ratioSlider}" Margin="3,0,0,0" Width="20"/>
-                    <Slider Minimum="0.5" Maximum="4" TickFrequency=".5" IsSnapToTickEnabled="True" Width="100" Value="1" x:Name="ratioSlider"/>
+            <Button
+                x:Name="btnStop"
+                MinWidth="50"
+                Margin="4"
+                Padding="4"
+                Click="btnStop_Click"
+                Content="Stop" />
+            <Button
+                x:Name="btnPause"
+                MinWidth="50"
+                Margin="4"
+                Padding="4"
+                Click="btnPause_Click"
+                Content="Pause" />
+            <Button
+                x:Name="btnFrameStep"
+                Margin="4"
+                Padding="4"
+                Click="btnFrameStep_Click"
+                Content="Framestep +1" />
+            <Border
+                Height="26"
+                Background="LightGray"
+                BorderBrush="Gray"
+                BorderThickness="1">
+                <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                    <TextBlock Margin="3,0,0,0" Text="Speedratio" />
+                    <TextBlock
+                        Width="20"
+                        Margin="3,0,0,0"
+                        Text="{Binding Path=Value, ElementName=ratioSlider}" />
+                    <Slider
+                        x:Name="ratioSlider"
+                        Width="100"
+                        IsSnapToTickEnabled="True"
+                        Maximum="4"
+                        Minimum="0.5"
+                        TickFrequency=".5"
+                        Value="1" />
                 </StackPanel>
             </Border>
 
