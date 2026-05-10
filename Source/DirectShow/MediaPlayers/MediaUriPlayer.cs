@@ -314,7 +314,17 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         }
 
         public string LAVFilterDirectory { get; set; }
+        
         public bool EnableLAVHardwareAcceleration { get; set; }
+
+        /// <summary>
+        /// When true, the player will use a global/shared LAV configuration
+        /// and will not apply per-graph runtime/configuration changes such
+        /// as calling SetRuntimeConfig or setting HW accel options.
+        /// Default is false.
+        /// </summary>
+        public bool EnableGlobalConfig { get; set; }
+
         public FilterName Splitter { get; set; }
         public FilterName SplitterSource { get; set; }
         public FilterName VideoDecoder { get; set; }
@@ -751,10 +761,16 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         {
             try
             {
+                if (EnableGlobalConfig)
+                {
+                    log.Info("EnableGlobalConfig is enabled; skipping per-graph LAV Video configuration.");
+                    return;
+                }
+
                 if (videoDecoderFilter is not ILAVVideoSettings settings)
                     return;
 
-                // 
+                // Prioritize SetRuntimeConfig for owner control
                 int hr = settings.SetRuntimeConfig(true);
                 if (hr < 0)
                 {
