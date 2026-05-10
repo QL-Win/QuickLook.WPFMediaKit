@@ -749,20 +749,21 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
         private void ConfigureLAVVideoHardwareAcceleration(IBaseFilter videoDecoderFilter)
         {
-            if (!EnableLAVHardwareAcceleration || videoDecoderFilter == null)
-                return;
-
-            if (videoDecoderFilter is not ILAVVideoSettings settings)
-                return;
-
             try
             {
+                if (videoDecoderFilter is not ILAVVideoSettings settings)
+                    return;
+
+                // 
                 int hr = settings.SetRuntimeConfig(true);
                 if (hr < 0)
                 {
                     log.Warn("Unable to switch LAV Video to runtime configuration mode (hr=0x{0:X8}).", hr);
                     return;
                 }
+
+                if (!EnableLAVHardwareAcceleration)
+                    return;
 
                 // Check for CUDA support first since it is generally more performant,
                 // and if not available fallback to DXVA2 Native
