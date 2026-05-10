@@ -731,16 +731,13 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
             // Set Audio Codec
             // Remove Pin
             var audioPinFrom = DirectShowLib.DsFindPin.ByName(sourceFilter, "Audio");
-            IPin audioPinTo;
             if (audioPinFrom != null)
             {
-                int hr = audioPinFrom.ConnectedTo(out audioPinTo);
+                int hr = audioPinFrom.ConnectedTo(out IPin audioPinTo);
                 if (hr >= 0 && audioPinTo != null)
                 {
-                    PinInfo pInfo;
-                    audioPinTo.QueryPinInfo(out pInfo);
-                    FilterInfo fInfo;
-                    pInfo.filter.QueryFilterInfo(out fInfo);
+                    audioPinTo.QueryPinInfo(out PinInfo pInfo);
+                    pInfo.filter.QueryFilterInfo(out FilterInfo fInfo);
 
                     DirectShowUtil.DisconnectAllPins(m_graph, pInfo.filter);
                     m_graph.RemoveFilter(pInfo.filter);
