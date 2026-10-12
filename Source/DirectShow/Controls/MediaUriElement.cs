@@ -13,6 +13,13 @@ namespace WPFMediaKit.DirectShow.Controls
     /// </summary>
     public class MediaUriElement : MediaSeekingElement
     {
+        private readonly SystemMediaTransportIntegration m_systemMediaTransport;
+
+        public MediaUriElement()
+        {
+            m_systemMediaTransport = new SystemMediaTransportIntegration(this);
+        }
+
         /// <summary>
         /// The current MediaUriPlayer
         /// </summary>
@@ -201,6 +208,44 @@ namespace WPFMediaKit.DirectShow.Controls
         }
         #endregion
 
+        #region EnableSystemMediaTransportControls
+
+        public static readonly DependencyProperty EnableSystemMediaTransportControlsProperty =
+            DependencyProperty.Register("EnableSystemMediaTransportControls", typeof(bool), typeof(MediaUriElement),
+                new FrameworkPropertyMetadata(true,
+                    new PropertyChangedCallback(OnEnableSystemMediaTransportControlsChanged)));
+
+        /// <summary>
+        /// Gets or sets whether the playback is published to the Windows
+        /// System Media Transport Controls (media keys and the system media flyout)
+        /// </summary>
+        public bool EnableSystemMediaTransportControls
+        {
+            get { return (bool)GetValue(EnableSystemMediaTransportControlsProperty); }
+            set { SetValue(EnableSystemMediaTransportControlsProperty, value); }
+        }
+
+        private static void OnEnableSystemMediaTransportControlsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            ((MediaUriElement)d).OnEnableSystemMediaTransportControlsChanged(e);
+        }
+
+        protected virtual void OnEnableSystemMediaTransportControlsChanged(DependencyPropertyChangedEventArgs e)
+        {
+            m_systemMediaTransport.OnEnabledChanged();
+        }
+
+        #endregion
+
+        protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+
+            /* Base constructors may set properties before ours has run */
+            if (e.Property == PlayerStateProperty || e.Property == IsPlayingProperty)
+                m_systemMediaTransport?.OnPlaybackStateChanged();
+        }
+
         public override void EndInit()
         {
             PlayerSetVideoRenderer();
@@ -234,6 +279,16 @@ namespace WPFMediaKit.DirectShow.Controls
             EnsurePlayerThread();
 
             base.Pause();
+        }
+
+        /// <summary>
+        /// The Close method is overrided so the media
+        /// leaves the system media transport controls
+        /// </summary>
+        public override void Close()
+        {
+            m_systemMediaTransport.Close();
+            base.Close();
         }
 
         /// <summary>
