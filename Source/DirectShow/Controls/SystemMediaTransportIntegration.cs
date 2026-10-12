@@ -1,8 +1,7 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Threading;
-using Windows.Media;
-using Windows.Media.Playback;
 using WPFMediaKit.DirectShow.MediaPlayers;
 
 namespace WPFMediaKit.DirectShow.Controls
@@ -12,11 +11,6 @@ namespace WPFMediaKit.DirectShow.Controls
     /// System Media Transport Controls (media keys and the system media flyout)
     /// and routes their commands back to the element.
     /// </summary>
-    /// <remarks>
-    /// Members that touch WinRT types must only be invoked through <see cref="Run"/>,
-    /// so systems without the WinRT media APIs fail inside its catch instead of
-    /// failing to JIT the caller.
-    /// </remarks>
     internal sealed class SystemMediaTransportIntegration
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SystemMediaTransportIntegration));
@@ -29,11 +23,15 @@ namespace WPFMediaKit.DirectShow.Controls
         private readonly DispatcherTimer m_timelineTimer;
 
         /// <summary>
-        /// Only hosts the SystemMediaTransportControls, it never plays anything
+        /// A Windows.Media.Playback.MediaPlayer that only hosts the
+        /// SystemMediaTransportControls, it never plays anything
         /// </summary>
-        private MediaPlayer m_player;
+        private object m_player;
 
-        private SystemMediaTransportControls m_controls;
+        private ISystemMediaTransportControls m_controls;
+        private ISystemMediaTransportControlsTimelineProperties m_timeline;
+        private long m_buttonPressedToken;
+        private long m_positionChangeRequestedToken;
         private bool m_isMediaOpen;
         private bool m_hasEnded;
 
@@ -161,63 +159,76 @@ namespace WPFMediaKit.DirectShow.Controls
 
         private void CreateControls()
         {
-            m_player = new MediaPlayer();
-            m_player.CommandManager.IsEnabled = false;
+            m_player = WindowsRuntimeActivator.ActivateInstance("Windows.Media.Playback.MediaPlayer");
+            ((IMediaPlayer3)m_player).get_CommandManager().put_IsEnabled(false);
 
-            m_controls = m_player.SystemMediaTransportControls;
-            m_controls.IsEnabled = true;
-            m_controls.IsPlayEnabled = true;
-            m_controls.IsPauseEnabled = true;
-            m_controls.IsStopEnabled = true;
-            m_controls.ButtonPressed += OnButtonPressed;
-            m_controls.PlaybackPositionChangeRequested += OnPlaybackPositionChangeRequested;
+            m_timeline = (ISystemMediaTransportControlsTimelineProperties)WindowsRuntimeActivator.ActivateInstance(
+                "Windows.Media.SystemMediaTransportControlsTimelineProperties");
+
+            m_controls = ((IMediaPlayer2)m_player).get_SystemMediaTransportControls();
+            m_controls.put_IsEnabled(true);
+            m_controls.put_IsPlayEnabled(true);
+            m_controls.put_IsPauseEnabled(true);
+            m_controls.put_IsStopEnabled(true);
+            m_buttonPressedToken = m_controls.add_ButtonPressed(
+                new ButtonPressedEventHandler(OnButtonPressed));
+            m_positionChangeRequestedToken = ((ISystemMediaTransportControls2)m_controls).add_PlaybackPositionChangeRequested(
+                new PlaybackPositionChangeRequestedEventHandler(OnPlaybackPositionChangeRequested));
         }
 
         private void ReleaseControls()
         {
             var player = m_player;
             var controls = m_controls;
+            long buttonPressedToken = m_buttonPressedToken;
+            long positionChangeRequestedToken = m_positionChangeRequestedToken;
             m_player = null;
             m_controls = null;
+            m_timeline = null;
+            m_buttonPressedToken = 0;
+            m_positionChangeRequestedToken = 0;
 
             try
             {
                 if (controls != null)
                 {
-                    controls.ButtonPressed -= OnButtonPressed;
-                    controls.PlaybackPositionChangeRequested -= OnPlaybackPositionChangeRequested;
-                    controls.PlaybackStatus = MediaPlaybackStatus.Closed;
-                    controls.IsEnabled = false;
+                    if (buttonPressedToken != 0)
+                        controls.remove_ButtonPressed(buttonPressedToken);
+                    if (positionChangeRequestedToken != 0)
+                        ((ISystemMediaTransportControls2)controls).remove_PlaybackPositionChangeRequested(positionChangeRequestedToken);
+                    controls.put_PlaybackStatus(MediaPlaybackStatus.Closed);
+                    controls.put_IsEnabled(false);
                 }
             }
             finally
             {
-                player.Dispose();
+                ((IClosable)player).Close();
+                Marshal.FinalReleaseComObject(player);
             }
         }
 
         private void UpdateDisplay()
         {
-            var updater = m_controls.DisplayUpdater;
+            var updater = m_controls.get_DisplayUpdater();
             var title = GetTitle(m_owner.Source);
 
             updater.ClearAll();
             if (m_owner.HasVideo)
             {
-                updater.Type = MediaPlaybackType.Video;
-                updater.VideoProperties.Title = title;
+                updater.put_Type(MediaPlaybackType.Video);
+                updater.get_VideoProperties().put_Title(title);
             }
             else
             {
-                updater.Type = MediaPlaybackType.Music;
-                updater.MusicProperties.Title = title;
+                updater.put_Type(MediaPlaybackType.Music);
+                updater.get_MusicProperties().put_Title(title);
             }
             updater.Update();
         }
 
         private void UpdatePlaybackStatus()
         {
-            m_controls.PlaybackStatus = GetPlaybackStatus();
+            m_controls.put_PlaybackStatus(GetPlaybackStatus());
         }
 
         private MediaPlaybackStatus GetPlaybackStatus()
@@ -238,26 +249,28 @@ namespace WPFMediaKit.DirectShow.Controls
 
         private void UpdateTimeline()
         {
-            var timeline = new SystemMediaTransportControlsTimelineProperties();
+            long duration = 0;
+            long position = 0;
 
             if (m_owner.CurrentPositionFormat == MediaPositionFormat.MediaTime)
             {
-                long duration = Math.Max(0, m_owner.MediaDuration);
-                long position = Math.Max(0, Math.Min(m_owner.MediaPosition, duration));
-
-                timeline.StartTime = TimeSpan.Zero;
-                timeline.EndTime = TimeSpan.FromTicks(duration);
-                timeline.MinSeekTime = TimeSpan.Zero;
-                timeline.MaxSeekTime = TimeSpan.FromTicks(duration);
-                timeline.Position = TimeSpan.FromTicks(position);
+                duration = Math.Max(0, m_owner.MediaDuration);
+                position = Math.Max(0, Math.Min(m_owner.MediaPosition, duration));
             }
 
-            m_controls.UpdateTimelineProperties(timeline);
+            m_timeline.put_StartTime(0);
+            m_timeline.put_EndTime(duration);
+            m_timeline.put_MinSeekTime(0);
+            m_timeline.put_MaxSeekTime(duration);
+            m_timeline.put_Position(position);
+            ((ISystemMediaTransportControls2)m_controls).UpdateTimelineProperties(m_timeline);
         }
 
-        private void OnButtonPressed(SystemMediaTransportControls sender, SystemMediaTransportControlsButtonPressedEventArgs args)
+        /// <summary>
+        /// Raised by the system on a thread pool thread
+        /// </summary>
+        private void OnButtonPressed(SystemMediaTransportControlsButton button)
         {
-            var button = args.Button;
             m_owner.Dispatcher.BeginInvoke((Action)(() => ExecuteButton(button)));
         }
 
@@ -280,18 +293,20 @@ namespace WPFMediaKit.DirectShow.Controls
             }
         }
 
-        private void OnPlaybackPositionChangeRequested(SystemMediaTransportControls sender, PlaybackPositionChangeRequestedEventArgs args)
+        /// <summary>
+        /// Raised by the system on a thread pool thread
+        /// </summary>
+        private void OnPlaybackPositionChangeRequested(long position)
         {
-            var position = args.RequestedPlaybackPosition;
             m_owner.Dispatcher.BeginInvoke((Action)(() => Seek(position)));
         }
 
-        private void Seek(TimeSpan position)
+        private void Seek(long position)
         {
             if (m_controls == null || m_owner.CurrentPositionFormat != MediaPositionFormat.MediaTime)
                 return;
 
-            m_owner.MediaPosition = Math.Max(0, Math.Min(position.Ticks, m_owner.MediaDuration));
+            m_owner.MediaPosition = Math.Max(0, Math.Min(position, m_owner.MediaDuration));
             Run(UpdateTimeline);
         }
 
