@@ -80,6 +80,11 @@
                     Checked="chkEnableLAVHW_Checked"
                     Content="Enable LAV HW Accel"
                     Unchecked="chkEnableLAVHW_Unchecked" />
+                <CheckBox
+                    Margin="4,0,4,0"
+                    VerticalAlignment="Center"
+                    Content="System media controls"
+                    IsChecked="{Binding EnableSystemMediaTransportControls, ElementName=mediaUriElement}" />
             </StackPanel>
         </Grid>
         <TextBlock
