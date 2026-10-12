@@ -10,7 +10,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
-    <NoWarn>${NoWarn};CS1591</NoWarn>
+    <NoWarn>${NoWarn};CA1416;CS1591;CS8073;SYSLIB0003;SYSLIB0032;SYSLIB0051</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -23,6 +23,7 @@
       <HintPath>Assemblies\DirectShowLib-2005.dll</HintPath>
     </Reference>
   </ItemGroup>
+
   <ItemGroup>
     <Resource Include="Effects\DeeperColor.ps" />
     <Content Include="Effects\DeeperColor.fx" />

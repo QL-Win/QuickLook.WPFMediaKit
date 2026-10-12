@@ -196,6 +196,19 @@ namespace WPFMediaKit.MediaFoundation
 
         #endregion
 
+        private static string GetPresenterDllPath()
+        {
+            var path = System.IO.Path.GetDirectoryName(new Uri(typeof(EvrPresenter).Assembly.Location).LocalPath);
+            var fileName = IntPtr.Size == 8 ? @"EvrPresenter64.dll" : @"EvrPresenter32.dll";
+#if NET
+            // RID-specific builds flatten runtimes\<rid>\native assets next to the assembly.
+            var nativePath = System.IO.Path.Combine(path, "runtimes", IntPtr.Size == 8 ? "win-x64" : "win-x86", "native", fileName);
+            if (System.IO.File.Exists(nativePath))
+                return nativePath;
+#endif
+            return System.IO.Path.Combine(path, fileName);
+        }
+
         /// <summary>
         /// Create a new EVR video presenter
         /// </summary>
@@ -219,9 +232,7 @@ namespace WPFMediaKit.MediaFoundation
             IMFVideoPresenter presenter = null;
             try
             {
-                var path = System.IO.Path.GetDirectoryName(new Uri(typeof(EvrPresenter).Assembly.Location).LocalPath);
-                var dlltoload = System.IO.Path.Combine(path, IntPtr.Size == 8 ? @"EvrPresenter64.dll" : @"EvrPresenter32.dll");
-                presenter = COMUtil.CreateFromDll<IMFVideoPresenter>(dlltoload, EVR_PRESENTER_CLSID);
+                presenter = COMUtil.CreateFromDll<IMFVideoPresenter>(GetPresenterDllPath(), EVR_PRESENTER_CLSID);
 
                 int count;
                 var settings = presenter as IEVRPresenterSettings;

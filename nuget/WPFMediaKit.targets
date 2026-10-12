@@ -4,8 +4,6 @@
       <Link>DirectShowLib-2005.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-  <ItemGroup>
 <None Include="$(MSBuildThisFileDirectory)EVRPresenter32.dll">
       <Link>EVRPresenter32.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

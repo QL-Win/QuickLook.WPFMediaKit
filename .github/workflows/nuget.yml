@@ -14,6 +14,7 @@ env:
 jobs:
   pack:
     runs-on: windows-2025
+    timeout-minutes: 30
     defaults:
       run:
         shell: pwsh
@@ -70,6 +71,8 @@ jobs:
             'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.dll'
             'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.xml'
             'lib/net10.0-windows7.0/DirectShowLib-2005.dll'
+            'runtimes/win-x86/native/EVRPresenter32.dll'
+            'runtimes/win-x64/native/EVRPresenter64.dll'
           )
           $missing = $expected | Where-Object { $_ -notin $entries }
           $entries | Sort-Object | ForEach-Object { "  $_" }
@@ -101,7 +104,54 @@ jobs:
           </configuration>
           "@ | Set-Content (Join-Path $root 'nuget.config')
 
-          foreach ($tfm in 'net10.0-windows', 'net462') {
+          $program = @'
+          class Program
+          {
+              [System.STAThread]
+              static int Main()
+              {
+                  try
+                  {
+                      new WPFMediaKit.DirectShow.Controls.MediaUriElement();
+                      WPFMediaKit.MediaFoundation.EvrPresenter.CreateNew();
+                      System.Console.WriteLine("EVR presenter created");
+                  }
+                  // Hosted runners have no GPU: the EVR DLL loads, but its D3D9 device may fail. Only a load failure (Win32Exception) is fatal.
+                  catch (WPFMediaKit.WPFMediaKitException ex) when (ex.InnerException is not System.ComponentModel.Win32Exception)
+                  {
+                      System.Console.WriteLine("EVR presenter loaded, device unavailable: " + ex.InnerException?.Message);
+                  }
+                  catch (System.Exception ex)
+                  {
+                      System.Console.Error.WriteLine(ex);
+                      return 1;
+                  }
+                  return 0;
+              }
+          }
+          '@
+
+          $scenarios = @(
+            @{
+              Name   = 'net10.0-windows build'
+              Tfm    = 'net10.0-windows'
+              Native = 'runtimes/win-x64/native/EVRPresenter64.dll', 'runtimes/win-x86/native/EVRPresenter32.dll'
+            }
+            @{
+              Name   = 'net10.0-windows publish win-x64'
+              Tfm    = 'net10.0-windows'
+              Rid    = 'win-x64'
+              Native = @('EVRPresenter64.dll')
+            }
+            @{
+              Name   = 'net462 build'
+              Tfm    = 'net462'
+              Native = 'EVRPresenter32.dll', 'EVRPresenter64.dll'
+            }
+          )
+
+          foreach ($scenario in $scenarios) {
+            $tfm = $scenario.Tfm
             $dir = Join-Path $root $tfm
             New-Item -ItemType Directory $dir -Force | Out-Null
 
@@ -119,29 +169,25 @@ jobs:
           </Project>
           "@ | Set-Content (Join-Path $dir 'Consumer.csproj')
 
-            @'
-          class Program
-          {
-              [System.STAThread]
-              static void Main()
-              {
-                  var element = new WPFMediaKit.DirectShow.Controls.MediaUriElement();
-                  System.Console.WriteLine(element.GetType().Assembly.Location);
-              }
-          }
-          '@ | Set-Content (Join-Path $dir 'Program.cs')
+            $program | Set-Content (Join-Path $dir 'Program.cs')
 
-            Write-Host "::group::$tfm"
-            dotnet build (Join-Path $dir 'Consumer.csproj') -c Release -nologo
-            if ($LASTEXITCODE -ne 0) { throw "$tfm consumer failed to build" }
+            Write-Host "::group::$($scenario.Name)"
+            $project = Join-Path $dir 'Consumer.csproj'
+            if ($scenario.Rid) {
+              $output = Join-Path $root "publish-$($scenario.Rid)"
+              dotnet publish $project -c Release -r $scenario.Rid --self-contained false -o $output -nologo
+            } else {
+              $output = Join-Path $dir "bin/Release/$tfm"
+              dotnet build $project -c Release -nologo
+            }
+            if ($LASTEXITCODE -ne 0) { throw "$($scenario.Name): consumer failed to build" }
 
-            $output = Join-Path $dir "bin/Release/$tfm"
-            foreach ($file in 'QuickLook.WPFMediaKit.dll', 'DirectShowLib-2005.dll', 'EVRPresenter32.dll', 'EVRPresenter64.dll') {
-              if (-not (Test-Path (Join-Path $output $file))) { throw "$tfm consumer output is missing $file" }
+            foreach ($file in @('QuickLook.WPFMediaKit.dll', 'DirectShowLib-2005.dll') + $scenario.Native) {
+              if (-not (Test-Path (Join-Path $output $file))) { throw "$($scenario.Name): output is missing $file" }
             }
 
             & (Join-Path $output 'Consumer.exe')
-            if ($LASTEXITCODE -ne 0) { throw "$tfm consumer exited with code $LASTEXITCODE" }
+            if ($LASTEXITCODE -ne 0) { throw "$($scenario.Name): consumer exited with code $LASTEXITCODE" }
             Write-Host '::endgroup::'
           }
 
