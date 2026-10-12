@@ -10,12 +10,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="DirectShowLib-2005">
-      <HintPath>..\Source\Assemblies\DirectShowLib-2005.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Source\WPF MediaKit.csproj" />
   </ItemGroup>
 

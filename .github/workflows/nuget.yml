@@ -59,24 +59,32 @@ jobs:
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $zip = [IO.Compression.ZipFile]::OpenRead($package.FullName)
           $entries = $zip.Entries.FullName
+          $reader = [IO.StreamReader]::new(($zip.Entries | Where-Object FullName -eq 'QuickLook.WPFMediaKit.nuspec').Open())
+          [xml]$nuspec = $reader.ReadToEnd()
+          $reader.Dispose()
           $zip.Dispose()
 
           $expected = @(
             'build/QuickLook.WPFMediaKit.targets'
-            'build/DirectShowLib-2005.dll'
             'build/EVRPresenter32.dll'
             'build/EVRPresenter64.dll'
             'lib/net462/QuickLook.WPFMediaKit.dll'
             'lib/net462/QuickLook.WPFMediaKit.xml'
             'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.dll'
             'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.xml'
-            'lib/net10.0-windows7.0/DirectShowLib-2005.dll'
             'runtimes/win-x86/native/EVRPresenter32.dll'
             'runtimes/win-x64/native/EVRPresenter64.dll'
           )
           $missing = $expected | Where-Object { $_ -notin $entries }
           $entries | Sort-Object | ForEach-Object { "  $_" }
           if ($missing) { throw "Package is missing: $($missing -join ', ')" }
+
+          $bundled = $entries | Where-Object { $_ -match 'DirectShowLib' }
+          if ($bundled) { throw "DirectShowLib must come from the DirectShowLib.Standard dependency, but the package bundles: $($bundled -join ', ')" }
+
+          foreach ($group in $nuspec.package.metadata.dependencies.group) {
+            if ('DirectShowLib.Standard' -notin $group.dependency.id) { throw "Dependency group $($group.targetFramework) does not declare DirectShowLib.Standard" }
+          }
 
       - name: Smoke test package consumers
         run: |
@@ -182,7 +190,7 @@ jobs:
             }
             if ($LASTEXITCODE -ne 0) { throw "$($scenario.Name): consumer failed to build" }
 
-            foreach ($file in @('QuickLook.WPFMediaKit.dll', 'DirectShowLib-2005.dll') + $scenario.Native) {
+            foreach ($file in @('QuickLook.WPFMediaKit.dll', 'DirectShowLib.dll') + $scenario.Native) {
               if (-not (Test-Path (Join-Path $output $file))) { throw "$($scenario.Name): output is missing $file" }
             }
 

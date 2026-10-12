@@ -679,7 +679,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
                         }
 
                         /* This will be the audio stream pin */
-                        if (mediaType.subType == MediaSubType.DolbyAC3 ||
+                        if (mediaType.subType == MediaSubType.Audio.DolbyAc3 ||
                            mediaType.subType == MediaSubType.Mpeg2Audio)
                         {
                             /* Keep the ref and we'll work with it later */

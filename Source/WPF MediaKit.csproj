@@ -19,9 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="DirectShowLib-2005">
-      <HintPath>Assemblies\DirectShowLib-2005.dll</HintPath>
-    </Reference>
+    <PackageReference Include="DirectShowLib.Standard" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>
