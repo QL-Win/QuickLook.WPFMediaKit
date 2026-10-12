@@ -6,9 +6,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-10-12
+
+This release changes the DirectShowLib assembly that the package depends on. Projects that reference `DirectShowLib-2005` directly must switch to `DirectShowLib`.
+
 ### Added
 
+- .NET 10 support. The package ships `lib/net10.0-windows7.0` alongside `lib/net462`.
 - System Media Transport Controls integration on `MediaUriElement`. `EnableSystemMediaTransportControls` publishes playback to Windows media keys and the system media flyout. The integration does not reference WinRT SDK contract assemblies.
+- GitHub Actions workflow that builds the EVR presenter and the library, packs the NuGet package, checks its contents, and runs .NET 10 and .NET Framework 4.6.2 consumer apps against it.
+
+### Changed
+
+- DirectShowLib comes from the [`DirectShowLib.Standard`](https://www.nuget.org/packages/DirectShowLib.Standard/) 2.1.0 package dependency. The assembly is now `DirectShowLib` (unsigned) instead of the strong-named `DirectShowLib-2005` 2.1.0.26626.
+- On .NET 10, the EVR presenter DLLs are shipped in `runtimes/win-x86/native` and `runtimes/win-x64/native`. The presenter is loaded from there, or from the assembly folder when a RID-specific build flattens native assets. .NET Framework projects still get the DLLs copied next to the assembly by the package `.targets` file.
+- XML documentation is generated for each target framework.
+
+### Fixed
+
+- NuGet license and project links pointed at a repository URL that does not exist.
+
+### Removed
+
+- The bundled `DirectShowLib-2005.dll`.
 
 ## [2.3.4] - 2026-05-10
 
@@ -127,7 +147,8 @@ This repository is a fork of [WPF MediaKit](https://github.com/Sascha-L/WPF-Medi
 
 - The EVR presenter no longer requires the DirectX March 2009 runtimes (thanks to Siegfried Krüger).
 
-[Unreleased]: https://github.com/QL-Win/QuickLook.WPFMediaKit/compare/2.3.4...HEAD
+[Unreleased]: https://github.com/QL-Win/QuickLook.WPFMediaKit/compare/3.0.1...HEAD
+[3.0.1]: https://github.com/QL-Win/QuickLook.WPFMediaKit/compare/2.3.4...3.0.1
 [2.3.4]: https://github.com/QL-Win/QuickLook.WPFMediaKit/compare/2.3.3...2.3.4
 [2.3.3]: https://github.com/QL-Win/QuickLook.WPFMediaKit/compare/2.3.2...2.3.3
 [2.3.2]: https://github.com/QL-Win/QuickLook.WPFMediaKit/compare/2.3.1...2.3.2

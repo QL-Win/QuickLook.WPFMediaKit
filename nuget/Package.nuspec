@@ -2,15 +2,15 @@
 <package >
   <metadata>
     <id>QuickLook.WPFMediaKit</id>
-    <version>2.3.4</version>
+    <version>3.0.1</version>
     <authors>WPF MediaKit Team</authors>
     <owners>WPF MediaKit Team</owners>
     <icon>app.png</icon>
-    <licenseUrl>https://github.com/QL-Win/QuickLook.WPF-MediaKit/blob/master/LICENSE</licenseUrl>
-    <projectUrl>https://github.com/QL-Win/QuickLook.WPF-MediaKit</projectUrl>   
+    <licenseUrl>https://github.com/QL-Win/QuickLook.WPFMediaKit/blob/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/QL-Win/QuickLook.WPFMediaKit</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>This package is part of QuickLook program. A library to quickly build DirectShow and MediaFoundation media player controls in WPF. The kit comes with a MediaElement replacement, a VideoCaptureElement for web cams and a DVDPlayerElement that plays DVDs and supports interactive menus.</description>
-    <releaseNotes>Some bugfixes and performance improvements.</releaseNotes>
+    <releaseNotes>Adds .NET 10 support and System Media Transport Controls integration. DirectShowLib now comes from the DirectShowLib.Standard package instead of the bundled DirectShowLib-2005.dll. See https://github.com/QL-Win/QuickLook.WPFMediaKit/blob/master/CHANGELOG.md</releaseNotes>
     <copyright>Copyright © 2015-2026 by WPF MediaKit Team and QL-Win Team</copyright>
     <tags>wpf video directshow evr dvd player media MediaFoundation</tags>
     <dependencies>
