@@ -1,0 +1,152 @@
+name: NuGet Package
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # EVRPresenter.vcxproj pins v141 and Windows SDK 10.0.17134, neither of which ships on hosted runners.
+  EVR_PLATFORM_TOOLSET: v143
+  EVR_WINDOWS_SDK: '10.0'
+
+jobs:
+  pack:
+    runs-on: windows-2025
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: microsoft/setup-msbuild@v2
+
+      - uses: NuGet/setup-nuget@v2
+
+      - name: Build EVR Presenter
+        run: |
+          foreach ($platform in 'Win32', 'x64') {
+            msbuild 'EVR Presenter/EVRPresenter.vcxproj' -nologo -v:m `
+              -p:Configuration=Release `
+              -p:Platform=$platform `
+              "-p:SolutionDir=$PWD/EVR Presenter/" `
+              -p:PlatformToolset=$env:EVR_PLATFORM_TOOLSET `
+              -p:WindowsTargetPlatformVersion=$env:EVR_WINDOWS_SDK
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Build WPF MediaKit
+        run: dotnet build 'Source/WPF MediaKit.csproj' -c Release -nologo
+
+      - name: Pack
+        working-directory: nuget
+        run: nuget pack Package.nuspec -OutputDirectory out -NonInteractive
+
+      - name: Verify package contents
+        run: |
+          $packages = @(Get-ChildItem nuget/out -Filter *.nupkg)
+          if ($packages.Count -ne 1) { throw "Expected exactly one .nupkg, found $($packages.Count)" }
+          $package = $packages[0]
+          "PACKAGE_PATH=$($package.FullName)" >> $env:GITHUB_ENV
+          "PACKAGE_VERSION=$($package.BaseName -replace '^QuickLook\.WPFMediaKit\.', '')" >> $env:GITHUB_ENV
+
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $zip = [IO.Compression.ZipFile]::OpenRead($package.FullName)
+          $entries = $zip.Entries.FullName
+          $zip.Dispose()
+
+          $expected = @(
+            'build/QuickLook.WPFMediaKit.targets'
+            'build/DirectShowLib-2005.dll'
+            'build/EVRPresenter32.dll'
+            'build/EVRPresenter64.dll'
+            'lib/net462/QuickLook.WPFMediaKit.dll'
+            'lib/net462/QuickLook.WPFMediaKit.xml'
+            'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.dll'
+            'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.xml'
+            'lib/net10.0-windows7.0/DirectShowLib-2005.dll'
+          )
+          $missing = $expected | Where-Object { $_ -notin $entries }
+          $entries | Sort-Object | ForEach-Object { "  $_" }
+          if ($missing) { throw "Package is missing: $($missing -join ', ')" }
+
+      - name: Smoke test package consumers
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'consumer'
+          New-Item -ItemType Directory $root -Force | Out-Null
+          $env:NUGET_PACKAGES = Join-Path $root 'packages'
+          $localSource = Split-Path $env:PACKAGE_PATH
+
+          @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="local" value="$localSource" />
+              <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
+            </packageSources>
+            <packageSourceMapping>
+              <packageSource key="local">
+                <package pattern="QuickLook.WPFMediaKit" />
+              </packageSource>
+              <packageSource key="nuget.org">
+                <package pattern="*" />
+              </packageSource>
+            </packageSourceMapping>
+          </configuration>
+          "@ | Set-Content (Join-Path $root 'nuget.config')
+
+          foreach ($tfm in 'net10.0-windows', 'net462') {
+            $dir = Join-Path $root $tfm
+            New-Item -ItemType Directory $dir -Force | Out-Null
+
+            @"
+          <Project Sdk="Microsoft.NET.Sdk">
+            <PropertyGroup>
+              <OutputType>Exe</OutputType>
+              <TargetFramework>$tfm</TargetFramework>
+              <UseWPF>true</UseWPF>
+              <LangVersion>latest</LangVersion>
+            </PropertyGroup>
+            <ItemGroup>
+              <PackageReference Include="QuickLook.WPFMediaKit" Version="$env:PACKAGE_VERSION" />
+            </ItemGroup>
+          </Project>
+          "@ | Set-Content (Join-Path $dir 'Consumer.csproj')
+
+            @'
+          class Program
+          {
+              [System.STAThread]
+              static void Main()
+              {
+                  var element = new WPFMediaKit.DirectShow.Controls.MediaUriElement();
+                  System.Console.WriteLine(element.GetType().Assembly.Location);
+              }
+          }
+          '@ | Set-Content (Join-Path $dir 'Program.cs')
+
+            Write-Host "::group::$tfm"
+            dotnet build (Join-Path $dir 'Consumer.csproj') -c Release -nologo
+            if ($LASTEXITCODE -ne 0) { throw "$tfm consumer failed to build" }
+
+            $output = Join-Path $dir "bin/Release/$tfm"
+            foreach ($file in 'QuickLook.WPFMediaKit.dll', 'DirectShowLib-2005.dll', 'EVRPresenter32.dll', 'EVRPresenter64.dll') {
+              if (-not (Test-Path (Join-Path $output $file))) { throw "$tfm consumer output is missing $file" }
+            }
+
+            & (Join-Path $output 'Consumer.exe')
+            if ($LASTEXITCODE -ne 0) { throw "$tfm consumer exited with code $LASTEXITCODE" }
+            Write-Host '::endgroup::'
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: nuget/out/*.nupkg
+          if-no-files-found: error

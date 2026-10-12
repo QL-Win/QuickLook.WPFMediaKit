@@ -4,8 +4,7 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <OutputType>Library</OutputType>
-    <TargetFramework>net462</TargetFramework>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <TargetFrameworks>net462;net10.0-windows</TargetFrameworks>
     <RootNamespace>WPFMediaKit</RootNamespace>
     <AssemblyName>QuickLook.WPFMediaKit</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -16,7 +15,7 @@
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
-    <DocumentationFile>bin\Release\QuickLook.WPFMediaKit.xml</DocumentationFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
