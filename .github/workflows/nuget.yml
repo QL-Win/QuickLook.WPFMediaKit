@@ -65,6 +65,7 @@ jobs:
           $zip.Dispose()
 
           $expected = @(
+            'README.md'
             'build/QuickLook.WPFMediaKit.targets'
             'build/EVRPresenter32.dll'
             'build/EVRPresenter64.dll'
