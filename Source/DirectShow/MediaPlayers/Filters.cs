@@ -67,7 +67,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
 
     /// <summary>
     ///	 A collection of Filter objects (DirectShow filters).
-    ///	 This is used by the <see cref="Capture"/> class to provide
+    ///	 This is used by the Capture class to provide
     ///	 lists of capture devices and compression filters. This class
     ///	 cannot be created directly.
     /// </summary>

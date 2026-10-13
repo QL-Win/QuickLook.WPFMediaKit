@@ -23,28 +23,28 @@ namespace WPFMediaKit
         /// </summary>
         /// <param name="exception">The exception. May be null.</param>
         /// <param name="message">A (formatted) message.</param>
-        /// <param name="args">Arguments to the formatted message. May be missing.
+        /// <param name="args">Arguments to the formatted message. May be missing.</param>
         void Error(Exception exception, string message, params object[] args);
 
         /// <summary>
         /// Logs the warning message.
         /// </summary>
         /// <param name="message">A (formatted) message.</param>
-        /// <param name="args">Arguments to the formatted message. May be missing.
+        /// <param name="args">Arguments to the formatted message. May be missing.</param>
         void Warn(string message, params object[] args);
 
         /// <summary>
         /// Logs the info message.
         /// </summary>
         /// <param name="message">A (formatted) message.</param>
-        /// <param name="args">Arguments to the formatted message. May be missing.
+        /// <param name="args">Arguments to the formatted message. May be missing.</param>
         void Info(string message, params object[] args);
 
         /// <summary>
         /// Logs the debug message.
         /// </summary>
         /// <param name="message">A (formatted) message.</param>
-        /// <param name="args">Arguments to the formatted message. May be missing.
+        /// <param name="args">Arguments to the formatted message. May be missing.</param>
         void Debug(string message, params object[] args);
     }
 

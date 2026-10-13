@@ -78,7 +78,7 @@ namespace WPFMediaKit.MediaFoundation
         /// <param name="mpaguid">objects Guid</param>
         /// <returns>a interface or null if not loaded</returns>
         /// <exception cref="System.Runtime.InteropServices.COMException">Thrown if the method can't creat COM-object</exception>
-        /// <exception cref="System.Runtime.DllNotFoundException">Thrown if the dll not found</exception>
+        /// <exception cref="System.DllNotFoundException">Thrown if the dll not found</exception>
         /// <exception cref="System.ArgumentNullException"/>
         [SecurityPermission(SecurityAction.LinkDemand, UnmanagedCode = true)]
         public static T CreateFromDll<T>(string dllName, Guid mpaguid)
@@ -134,10 +134,10 @@ namespace WPFMediaKit.MediaFoundation
             /// Gets a class factory for a specific COM Class ID.
             /// </summary>
             /// <param name="dllName">The dll where the COM class is implemented</param>
-            /// <param name="filterPersistClass">The requested Class ID</param>
+            /// <param name="filtersGuiid">The requested Class ID</param>
             /// <returns>IClassFactory instance used to create instances of that class</returns>
             /// <exception cref="System.Runtime.InteropServices.COMException">Thrown if the method can't creat COM-object</exception>
-            /// <exception cref="System.Runtime.DllNotFoundException">Thrown if the dll not found</exception>
+            /// <exception cref="System.DllNotFoundException">Thrown if the dll not found</exception>
             public static IClassFactory GetClassFactory(string dllName, Guid filtersGuiid)
             {
                 IntPtr dllHandle = loader.GetDLLHandle(dllName);

@@ -45,7 +45,7 @@ namespace WPFMediaKit.DirectShow.MediaPlayers
         /// </summary>
         /// <param name="lpFileName">Pointer to a null-terminated string that names the executable module (either a .dll or .exe file). The name specified is the file name of the module and is not related to the name stored in the library module itself, as specified by the LIBRARY keyword in the module-definition (.def) file.</param>
         /// <param name="hFile">This parameter is reserved for future use. It must be IntPtr.Zero.</param>
-        /// <param name="dwFlags">The action to be taken when loading the module. If no flags are specified, the behavior of this function is identical to that of the <see cref="LoadLibrary"/> function.</param>
+        /// <param name="dwFlags">The action to be taken when loading the module. If no flags are specified, the behavior of this function is identical to that of the LoadLibrary function.</param>
         /// <returns>If the function succeeds, the return value is a handle to the module.<br/>If the function fails, the return value is NULL. To get extended error information, call Marshal.GetLastWin32Error.</returns>
         [DllImport("kernel32.dll")]
         static extern IntPtr LoadLibraryEx(string lpFileName, IntPtr hFile, uint dwFlags);

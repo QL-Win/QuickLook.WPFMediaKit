@@ -654,7 +654,7 @@ namespace WPFMediaKit.DirectShow.Controls
 
         /// <summary>
         /// Convenient method for making frame shots.
-        /// For the exceptions, see <see cref="D3DImage.SetBackBuffer(D3DResourceType, IntPtr)". />
+        /// For the exceptions, see <see cref="D3DImage.SetBackBuffer(D3DResourceType, IntPtr)"/>.
         /// </summary>
         public static void SetBackBufferWithLock(D3DImage d3d, IntPtr backBuffer)
         {
