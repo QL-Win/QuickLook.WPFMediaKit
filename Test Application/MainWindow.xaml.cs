@@ -1,5 +1,8 @@
 ﻿using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using WPFMediaKit.DirectShow.Controls;
 using System.Linq;
@@ -35,6 +38,39 @@ namespace Test_Application
                 cobVideoSource.ItemsSource = MultimediaUtil.VideoInputNames;
             }
             SetCameraCaptureElementVisible(false);
+            CheckLavFiltersMissing();
+        }
+
+        private void CheckLavFiltersMissing()
+        {
+            if (!Debugger.IsAttached)
+                return;
+
+            string directory = mediaUriElement.MediaUriPlayer.LAVFilterDirectory;
+            if (string.IsNullOrEmpty(directory))
+                return;
+
+            if (!Path.IsPathRooted(directory))
+            {
+                string assemblyDirectory = Path.GetDirectoryName(typeof(MediaUriPlayer).Assembly.Location);
+                directory = Path.Combine(assemblyDirectory, directory);
+            }
+
+            string[] fileNames = { "LAVSplitter.ax", "LAVVideo.ax", "LAVAudio.ax" };
+            var missing = new List<string>();
+            foreach (string fileName in fileNames)
+            {
+                string path = Path.GetFullPath(Path.Combine(directory, fileName));
+                if (!File.Exists(path))
+                    missing.Add(path);
+            }
+
+            if (missing.Count == 0)
+                return;
+
+            Debug.WriteLine("LAV filters were not found:");
+            foreach (string path in missing)
+                Debug.WriteLine(path);
         }
 
         private void MediaUriElement_MediaEnded(object sender, RoutedEventArgs e)
@@ -78,7 +114,6 @@ namespace Test_Application
             var result = dlg.ShowDialog();
             if (result != true)
                 return;
-
 
             errorText.Text = null;
             SetCameraCaptureElementVisible(false);
@@ -156,7 +191,7 @@ namespace Test_Application
             SetCameraCaptureElementVisible(true);
             cameraCaptureElement.VideoCaptureDevice = MultimediaUtil.VideoInputDevices[cobVideoSource.SelectedIndex];
         }
-        
+
         private void chkEnableLAVHW_Checked(object sender, RoutedEventArgs e)
         {
             SetEnableLAVHardwareAcceleration(true);
@@ -191,10 +226,10 @@ namespace Test_Application
             player.Dispatcher.BeginInvoke((Action)(() =>
                 player.ApplyHardwareAcceleration(enable)));
         }
-        
+
         private void btnFrameStep_Click(object sender, RoutedEventArgs e)
         {
-            if  (mediaUriElement.Source != null)
+            if (mediaUriElement.Source != null)
             {
                 mediaUriElement.FrameStep(1);
             }
