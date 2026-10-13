@@ -45,6 +45,31 @@ namespace WPFMediaKit
             NotifyShell(shortcutPath, shortcutExisted ? SHCNE_UPDATEITEM : SHCNE_CREATE);
         }
 
+        /// <summary>
+        /// Deletes every shortcut under this user's Start menu Programs folder whose
+        /// <c>System.AppUserModel.ID</c> property equals <paramref name="appUserModelId"/>.
+        /// <see cref="Register"/> writes that property, so this removes every shortcut it created,
+        /// including ones left under an older display name.
+        /// </summary>
+        public static void RemoveShortcuts(string appUserModelId)
+        {
+            if (string.IsNullOrWhiteSpace(appUserModelId) || appUserModelId.Length >= 128 || appUserModelId.IndexOf(' ') >= 0)
+                throw new ArgumentException("AppUserModelID must be shorter than 128 characters and cannot contain spaces.", nameof(appUserModelId));
+
+            string programs = Environment.GetFolderPath(Environment.SpecialFolder.Programs);
+            if (!Directory.Exists(programs))
+                return;
+
+            foreach (string shortcutPath in Directory.EnumerateFiles(programs, "*.lnk", SearchOption.AllDirectories))
+            {
+                if (!ShortcutHasAppUserModelId(shortcutPath, appUserModelId))
+                    continue;
+
+                File.Delete(shortcutPath);
+                NotifyShell(shortcutPath, SHCNE_DELETE);
+            }
+        }
+
         private static string RegisterShortcut(string appUserModelId, string displayName, out bool shortcutExisted)
         {
             ProcessModule module = Process.GetCurrentProcess().MainModule;
@@ -89,6 +114,44 @@ namespace WPFMediaKit
             return shortcutPath;
         }
 
+        private static bool ShortcutHasAppUserModelId(string shortcutPath, string appUserModelId)
+        {
+            var shellLink = (IShellLinkW)new ShellLink();
+            try
+            {
+                ((IPersistFile)shellLink).Load(shortcutPath, StgmRead);
+
+                var store = (IPropertyStore)shellLink;
+                var key = AppUserModelIdKey;
+                PropVariant value;
+                store.GetValue(ref key, out value);
+                try
+                {
+                    return string.Equals(value.ReadString(), appUserModelId, StringComparison.Ordinal);
+                }
+                finally
+                {
+                    PropVariantClear(ref value);
+                }
+            }
+            catch (COMException)
+            {
+                return false;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+            finally
+            {
+                Marshal.FinalReleaseComObject(shellLink);
+            }
+        }
+
         private static void NotifyShell(string shortcutPath, int eventId)
         {
             IntPtr path = Marshal.StringToCoTaskMemUni(shortcutPath);
@@ -102,8 +165,10 @@ namespace WPFMediaKit
             }
         }
 
+        private const int SHCNE_DELETE = 0x00000004;
         private const int SHCNE_CREATE = 0x00000002;
         private const int SHCNE_UPDATEITEM = 0x00002000;
+        private const int StgmRead = 0;
         private const uint SHCNF_PATHW = 0x0005;
         private const uint SHCNF_FLUSHNOWAIT = 0x2000;
 
@@ -141,6 +206,14 @@ namespace WPFMediaKit
                     VariantType = VtLpWstr,
                     Value = Marshal.StringToCoTaskMemUni(value)
                 };
+            }
+
+            public string ReadString()
+            {
+                if (VariantType != VtLpWstr || Value == IntPtr.Zero)
+                    return null;
+
+                return Marshal.PtrToStringUni(Value);
             }
         }
 
