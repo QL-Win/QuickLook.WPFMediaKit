@@ -4,7 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
-namespace WPFMediaKit
+namespace WPFMediaKit.MediaFoundation
 {
     /// <summary>
     /// Registers the process identity the Windows shell uses for taskbar grouping

@@ -1,5 +1,5 @@
 ﻿using System.Windows;
-using WPFMediaKit;
+using WPFMediaKit.MediaFoundation;
 
 namespace Test_Application
 {
