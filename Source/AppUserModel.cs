@@ -4,41 +4,58 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
-namespace Test_Application
+namespace WPFMediaKit
 {
     /// <summary>
-    /// Publishes the process identity the system media flyout resolves to a display name.
-    /// The flyout shows the Start menu shortcut name; the AppUserModelID itself is only the lookup key.
+    /// Registers the process identity the Windows shell uses for taskbar grouping
+    /// and the system media flyout. Call <see cref="Register"/> before any window is created.
     /// </summary>
-    internal static class AppUserModel
+    public static class AppUserModel
     {
-        internal const string Id = "WPFMediaKit.TestApplication";
-        internal const string DisplayName = "WPF-MediaKit Test Application";
-
         private static readonly PropertyKey AppUserModelIdKey = new PropertyKey
         {
             FormatId = new Guid("9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3"),
             PropertyId = 5
         };
 
-        public static void Register()
+        /// <summary>
+        /// Assigns <paramref name="appUserModelId"/> to this process and publishes
+        /// <paramref name="displayName"/> through a per-user Start menu shortcut.
+        /// The media flyout shows the shortcut name.
+        /// </summary>
+        /// <param name="appUserModelId">
+        /// Process identity, such as <c>WPFMediaKit.TestApplication</c>.
+        /// Shorter than 128 characters and without spaces.
+        /// </param>
+        /// <param name="displayName">
+        /// Name shown for this app, such as <c>WPF-MediaKit Test Application</c>.
+        /// </param>
+        public static void Register(string appUserModelId, string displayName)
         {
-            string shortcutPath = RegisterShortcut(out bool shortcutExisted);
-            int hr = SetCurrentProcessExplicitAppUserModelID(Id);
+            if (string.IsNullOrWhiteSpace(appUserModelId) || appUserModelId.Length >= 128 || appUserModelId.IndexOf(' ') >= 0)
+                throw new ArgumentException("AppUserModelID must be shorter than 128 characters and cannot contain spaces.", nameof(appUserModelId));
+            if (string.IsNullOrWhiteSpace(displayName) || displayName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                throw new ArgumentException("Display name must be a valid file name.", nameof(displayName));
+
+            string shortcutPath = RegisterShortcut(appUserModelId, displayName, out bool shortcutExisted);
+            int hr = SetCurrentProcessExplicitAppUserModelID(appUserModelId);
             if (hr < 0)
                 Marshal.ThrowExceptionForHR(hr);
 
             NotifyShell(shortcutPath, shortcutExisted ? SHCNE_UPDATEITEM : SHCNE_CREATE);
         }
 
-        private static string RegisterShortcut(out bool shortcutExisted)
+        private static string RegisterShortcut(string appUserModelId, string displayName, out bool shortcutExisted)
         {
-            string exePath = Process.GetCurrentProcess().MainModule.FileName;
+            ProcessModule module = Process.GetCurrentProcess().MainModule;
+            string exePath = module == null ? null : module.FileName;
+            if (string.IsNullOrEmpty(exePath))
+                throw new InvalidOperationException("The current process has no executable path.");
+
             string shortcutPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.Programs),
-                DisplayName + ".lnk");
+                displayName + ".lnk");
             shortcutExisted = File.Exists(shortcutPath);
-
             Directory.CreateDirectory(Path.GetDirectoryName(shortcutPath));
 
             var shellLink = (IShellLinkW)new ShellLink();
@@ -46,12 +63,12 @@ namespace Test_Application
             {
                 shellLink.SetPath(exePath);
                 shellLink.SetWorkingDirectory(Path.GetDirectoryName(exePath));
-                shellLink.SetDescription(DisplayName);
+                shellLink.SetDescription(displayName);
                 shellLink.SetIconLocation(exePath, 0);
 
                 var store = (IPropertyStore)shellLink;
                 var key = AppUserModelIdKey;
-                InitString(Id, out PropVariant value);
+                PropVariant value = PropVariant.FromString(appUserModelId);
                 try
                 {
                     store.SetValue(ref key, ref value);
@@ -66,21 +83,10 @@ namespace Test_Application
             }
             finally
             {
-#pragma warning disable CA1416
                 Marshal.FinalReleaseComObject(shellLink);
-#pragma warning restore CA1416
             }
 
             return shortcutPath;
-        }
-
-        private static void InitString(string value, out PropVariant variant)
-        {
-            variant = new PropVariant
-            {
-                VariantType = 31,
-                Value = Marshal.StringToCoTaskMemUni(value)
-            };
         }
 
         private static void NotifyShell(string shortcutPath, int eventId)
@@ -120,11 +126,22 @@ namespace Test_Application
         [StructLayout(LayoutKind.Explicit, Size = 24)]
         private struct PropVariant
         {
+            private const ushort VtLpWstr = 31;
+
             [FieldOffset(0)]
             public ushort VariantType;
 
             [FieldOffset(8)]
             public IntPtr Value;
+
+            public static PropVariant FromString(string value)
+            {
+                return new PropVariant
+                {
+                    VariantType = VtLpWstr,
+                    Value = Marshal.StringToCoTaskMemUni(value)
+                };
+            }
         }
 
         [ComImport]
@@ -139,22 +156,39 @@ namespace Test_Application
         private interface IShellLinkW
         {
             void GetPath(IntPtr file, int fileCapacity, IntPtr findData, int flags);
+
             void GetIDList(out IntPtr idList);
+
             void SetIDList(IntPtr idList);
+
             void GetDescription(IntPtr name, int nameCapacity);
+
             void SetDescription([MarshalAs(UnmanagedType.LPWStr)] string name);
+
             void GetWorkingDirectory(IntPtr directory, int directoryCapacity);
+
             void SetWorkingDirectory([MarshalAs(UnmanagedType.LPWStr)] string directory);
+
             void GetArguments(IntPtr arguments, int argumentsCapacity);
+
             void SetArguments([MarshalAs(UnmanagedType.LPWStr)] string arguments);
+
             void GetHotkey(out short hotkey);
+
             void SetHotkey(short hotkey);
+
             void GetShowCmd(out int showCommand);
+
             void SetShowCmd(int showCommand);
+
             void GetIconLocation(IntPtr iconPath, int iconPathCapacity, out int iconIndex);
+
             void SetIconLocation([MarshalAs(UnmanagedType.LPWStr)] string iconPath, int iconIndex);
+
             void SetRelativePath([MarshalAs(UnmanagedType.LPWStr)] string relativePath, int reserved);
+
             void Resolve(IntPtr window, int flags);
+
             void SetPath([MarshalAs(UnmanagedType.LPWStr)] string file);
         }
 
@@ -164,9 +198,13 @@ namespace Test_Application
         private interface IPropertyStore
         {
             uint GetCount();
+
             PropertyKey GetAt(uint index);
+
             void GetValue(ref PropertyKey key, out PropVariant value);
+
             void SetValue(ref PropertyKey key, ref PropVariant value);
+
             void Commit();
         }
     }

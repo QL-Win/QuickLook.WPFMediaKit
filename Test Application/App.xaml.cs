@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using WPFMediaKit;
 
 namespace Test_Application
 {
@@ -9,7 +10,7 @@ namespace Test_Application
     {
         static App()
         {
-            AppUserModel.Register();
+            AppUserModel.Register("WPFMediaKit.TestApplication", "WPF-MediaKit Test Application");
         }
     }
 }

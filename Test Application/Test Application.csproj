@@ -6,11 +6,16 @@
     <TargetFrameworks>net462;net10.0-windows</TargetFrameworks>
     <RootNamespace>Test_Application</RootNamespace>
     <AssemblyName>Test Application</AssemblyName>
+    <ApplicationIcon>Logo.ico</ApplicationIcon>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Source\WPF MediaKit.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Logo.ico" />
   </ItemGroup>
 
   <ItemGroup>

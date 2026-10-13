@@ -10,6 +10,7 @@
     Title="MainWindow"
     Width="825"
     Height="450"
+    Icon="Logo.ico"
     mc:Ignorable="d">
     <Window.Resources>
         <local:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
