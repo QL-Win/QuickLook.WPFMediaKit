@@ -23,7 +23,9 @@ jobs:
 
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: |
+            8.0.x
+            10.0.x
 
       - uses: microsoft/setup-msbuild@v2
 
@@ -71,6 +73,8 @@ jobs:
             'build/EVRPresenter64.dll'
             'lib/net462/QuickLook.WPFMediaKit.dll'
             'lib/net462/QuickLook.WPFMediaKit.xml'
+            'lib/net8.0-windows7.0/QuickLook.WPFMediaKit.dll'
+            'lib/net8.0-windows7.0/QuickLook.WPFMediaKit.xml'
             'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.dll'
             'lib/net10.0-windows7.0/QuickLook.WPFMediaKit.xml'
             'runtimes/win-x86/native/EVRPresenter32.dll'
@@ -142,6 +146,17 @@ jobs:
 
           $scenarios = @(
             @{
+              Name   = 'net8.0-windows build'
+              Tfm    = 'net8.0-windows'
+              Native = 'runtimes/win-x64/native/EVRPresenter64.dll', 'runtimes/win-x86/native/EVRPresenter32.dll'
+            }
+            @{
+              Name   = 'net8.0-windows publish win-x64'
+              Tfm    = 'net8.0-windows'
+              Rid    = 'win-x64'
+              Native = @('EVRPresenter64.dll')
+            }
+            @{
               Name   = 'net10.0-windows build'
               Tfm    = 'net10.0-windows'
               Native = 'runtimes/win-x64/native/EVRPresenter64.dll', 'runtimes/win-x86/native/EVRPresenter32.dll'
@@ -183,7 +198,7 @@ jobs:
             Write-Host "::group::$($scenario.Name)"
             $project = Join-Path $dir 'Consumer.csproj'
             if ($scenario.Rid) {
-              $output = Join-Path $root "publish-$($scenario.Rid)"
+              $output = Join-Path $root "publish-$tfm-$($scenario.Rid)"
               dotnet publish $project -c Release -r $scenario.Rid --self-contained false -o $output -nologo
             } else {
               $output = Join-Path $dir "bin/Release/$tfm"

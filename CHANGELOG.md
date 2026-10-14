@@ -4,15 +4,13 @@ All notable changes to QuickLook.WPFMediaKit are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [Unreleased]
-
 ## [3.0.1] - 2026-10-12
 
 This release changes the DirectShowLib assembly that the package depends on. Projects that reference `DirectShowLib-2005` directly must switch to `DirectShowLib`.
 
 ### Added
 
-- .NET 10 support. The package ships `lib/net10.0-windows7.0` alongside `lib/net462`.
+- .NET 8 and .NET 10 support. The package ships `lib/net8.0-windows7.0` alongside `lib/net462`.
 - System Media Transport Controls integration on `MediaUriElement`. `EnableSystemMediaTransportControls` publishes playback to Windows media keys and the system media flyout. The integration does not reference WinRT SDK contract assemblies.
 - GitHub Actions workflow that builds the EVR presenter and the library, packs the NuGet package, checks its contents, and runs .NET 10 and .NET Framework 4.6.2 consumer apps against it.
 
